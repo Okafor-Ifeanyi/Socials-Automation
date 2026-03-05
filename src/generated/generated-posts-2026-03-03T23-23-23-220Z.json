@@ -1,0 +1,8 @@
+{
+  "topic": "importance of code reviews",
+  "generatedAt": "2026-03-03T23:23:23.220Z",
+  "posts": {
+    "xPost": "Code reviews aren't about catching bugs. They're about catching tomorrow's headaches. Your future self will thank you for the extra 10 minutes you spend today.",
+    "linkedInPost": "Six months ago, I thought code reviews were a waste of time.\n\nI was shipping features fast, hitting deadlines, getting things done. Why slow down for someone else to nitpick my perfectly functional code?\n\nThen I inherited a codebase from a developer who felt the same way.\n\n3000 lines of \"working\" code with zero comments, variable names like 'temp1' and 'x2', and logic so convoluted I needed a flowchart just to understand a simple function.\n\nIt worked. But it was unmaintainable.\n\nThat's when it clicked: code reviews aren't about finding bugs. Any decent test suite can catch those.\n\nCode reviews are about:\n→ Making sure someone else can understand your code at 2 AM\n→ Catching the shortcuts that seem smart today but cost weeks tomorrow  \n→ Spreading knowledge across the team\n→ Building better coding habits through osmosis\n\nThe best code review I ever received had zero technical corrections. Instead, my colleague asked: \"What happens if this API call fails?\" \n\nOne question. Saved us a production incident three weeks later.\n\nNow I request reviews on everything, even small fixes. Because the goal isn't perfect code—it's maintainable code.\n\nYour future self (and your teammates) will thank you for those extra 10 minutes today."
+  }
+}

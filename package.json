@@ -1,0 +1,32 @@
+{
+  "name": "ai-content-manager",
+  "version": "1.0.0",
+  "description": "AI-powered content manager for X and LinkedIn",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/content-generator.js",
+    "generate": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts"
+  },
+  "keywords": [
+    "ai",
+    "content",
+    "social-media",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@getlatedev/node": "^0.1.37",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
