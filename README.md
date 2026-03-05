@@ -17,6 +17,7 @@ An automated content generation and publishing system that uses Claude AI to cre
 - Anthropic API key ([console.anthropic.com](https://console.anthropic.com))
 - Late.dev API key ([getlate.dev](https://getlate.dev))
 - Your X and LinkedIn accounts connected to Late.dev
+- Download an archive of your data from both platforms to provide training examples.
 
 ## 🚀 Quick Start
 
