@@ -56,7 +56,6 @@ export class LatePublisher {
       const { post } = await this.late.posts.createPost({
         body: requestBody, // <-- ADD "body:" HERE
       });
-      console.log("✅ Tweet posted!", post);
       return post as LatePostResponse;
     } catch (error) {
       console.error("❌ Twitter posting failed:", error);
@@ -98,14 +97,11 @@ export class LatePublisher {
       });
 
       // DEBUG: Log the full response
-      console.log("📦 Full API Response:", JSON.stringify(response, null, 2));
-
       if (!response || !response.data.post) {
         console.error("❌ Unexpected response structure:", response);
         throw new Error("API returned unexpected response structure");
       }
 
-      console.log("✅ LinkedIn post published!", response.data.post);
       return response.data.post as LatePostResponse;
     } catch (error) {
       console.error("❌ LinkedIn posting failed:", error);

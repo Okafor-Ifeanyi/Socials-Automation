@@ -68,7 +68,7 @@ async function main(): Promise<void> {
   const scheduleTime = args.find(arg => arg.startsWith('--time='))?.split('=')[1];
 
   if (!topic) {
-    console.log('Usage: npm run generate "your topic" [--publish] [--schedule --time=2026-03-10T09:00:00Z]');
+    console.log('Usage: npm run generate -- "your topic" [--publish] [--schedule --time=2026-03-10T09:00:00Z]');
     console.log('\nOptions:');
     console.log('  --publish              Publish immediately to X and LinkedIn');
     console.log('  --schedule --time=...  Schedule for a specific time (ISO 8601 format)');
