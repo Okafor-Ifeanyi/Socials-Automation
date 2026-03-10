@@ -48,7 +48,7 @@ jobs:
         run: |
           if [ -n "${{ github.event.inputs.topic }}" ]; then
             echo "Manual topic provided: ${{ github.event.inputs.topic }}"
-            npm run generate "${{ github.event.inputs.topic }}" --publish
+            npm run generate -- "${{ github.event.inputs.topic }}" --publish
           else
             echo "Running automated topic selection"
             npx tsx src/auto-poster.ts
