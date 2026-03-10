@@ -64,7 +64,7 @@ Export your posts from LinkedIn and X, then place them in:
 
 ### 4. Generate Your First Post
 ```bash
-npm run generate "why developers should take breaks"
+npm run generate -- "why developers should take breaks"
 ```
 
 ---
@@ -73,27 +73,27 @@ npm run generate "why developers should take breaks"
 
 ### Basic Command Structure
 ```bash
-npm run generate "your topic" [flags]
+npm run generate -- "your topic" [flags]
 ```
 
 ### Available Flags
 
 | Flag | Description | Example |
 |------|-------------|---------|
-| None | Generate only (no publishing) | `npm run generate "code reviews"` |
-| `--publish` | Generate and publish immediately | `npm run generate "AI tools" --publish` |
-| `--schedule --time=<ISO_DATE>` | Schedule for a specific time | `npm run generate "productivity" --schedule --time=2026-03-10T09:00:00Z` |
+| None | Generate only (no publishing) | `npm run generate -- "code reviews"` |
+| `--publish` | Generate and publish immediately | `npm run generate -- "AI tools" --publish` |
+| `--schedule --time=<ISO_DATE>` | Schedule for a specific time | `npm run generate -- "productivity" --schedule --time=2026-03-10T09:00:00Z` |
 
 ### Detailed Examples
 
 #### 1. Generate Content Only (No Publishing)
 ```bash
-npm run generate "the importance of code reviews"
+npm run generate -- "the importance of code reviews"
 ```
 
 **Output:**
 - Displays generated X and LinkedIn posts
-- Saves to `generated-posts/generated-posts-<timestamp>.json`
+- Saves to `generated/generated-posts-<timestamp>.json`
 - Does NOT publish anywhere
 
 **Use this when:**
@@ -105,7 +105,7 @@ npm run generate "the importance of code reviews"
 
 #### 2. Generate and Publish Immediately
 ```bash
-npm run generate "building in public as a developer" --publish
+npm run generate -- "building in public as a developer" --publish
 ```
 
 **Output:**
@@ -123,7 +123,7 @@ npm run generate "building in public as a developer" --publish
 
 #### 3. Generate and Schedule for Later
 ```bash
-npm run generate "5 debugging tips" --schedule --time=2026-03-10T09:00:00Z
+npm run generate -- "5 debugging tips" --schedule --time=2026-03-10T09:00:00Z
 ```
 
 **Output:**
@@ -296,7 +296,7 @@ await generator.provideFeedback(postId, {
 
 #### 3. **Interactive Review Mode** ✅
 ```bash
-npm run generate "topic" --review
+npm run generate -- "topic" --review
 ```
 - Review each post before publishing
 - Edit content inline
@@ -413,7 +413,26 @@ This is a personal project, but feedback and suggestions are welcome! Open an is
 
 ## 📄 License
 
-MIT License - Use however you want!
+**Custom License - Free for Personal Use, 10% Revenue Share for Commercial**
+
+### TL;DR
+- **Personal use**: Completely free, no strings attached
+- **Commercial use** (charging others): 10% of gross revenue goes to the original author
+
+### Full Terms
+
+You may use, modify, and distribute this software for free, with the following conditions:
+
+1. **Personal & Internal Use**: Free for personal projects and internal business operations
+2. **Open Source Projects**: Free if you're not charging for access
+3. **Commercial Use**: If you charge others for a product/service using this code, you owe 10% of gross revenue to Ifeanyi Okafor
+   - Payment: Quarterly
+   - Contact: [your-email@example.com]
+   - Reporting: Basic revenue transparency required
+
+**Questions?** Reach out before launching commercially. I'm flexible and reasonable.
+
+**Warranty:** None. Use at your own risk.
 
 ---
 

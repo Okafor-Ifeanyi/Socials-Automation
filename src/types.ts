@@ -28,7 +28,7 @@ export interface LatePostRequest {
 }
 
 export interface LatePostResponse {
-  id: string;
+  _id: string;
   status: 'scheduled' | 'published' | 'failed';
   platforms: string[];
   scheduledFor?: string;

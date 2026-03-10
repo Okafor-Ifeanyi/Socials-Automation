@@ -8,7 +8,9 @@
     "build": "tsc",
     "start": "node dist/content-generator.js",
     "generate": "tsx src/index.ts",
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "auto-post": "tsx src/autoPoster.ts",
+    "get-accounts": "tsx src/get-accounts.ts"
   },
   "keywords": [
     "ai",
