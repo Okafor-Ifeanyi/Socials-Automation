@@ -113,17 +113,42 @@ export class LatePublisher {
    * Post to both X and LinkedIn simultaneously
    * Uses different content for each platform
    */
+  // async postToBoth(
+  //   xText: string,
+  //   linkedInText: string,
+  //   scheduledFor?: Date,
+  // ): Promise<{ x: LatePostResponse; linkedin: LatePostResponse }> {
+  //   const [x, linkedin] = await Promise.all([
+  //     this.postToX(xText, scheduledFor),
+  //     this.postToLinkedIn(linkedInText, scheduledFor),
+  //   ]);
+
+  //   return { x, linkedin };
+  // }
   async postToBoth(
     xText: string,
     linkedInText: string,
     scheduledFor?: Date,
   ): Promise<{ x: LatePostResponse; linkedin: LatePostResponse }> {
-    const [x, linkedin] = await Promise.all([
-      this.postToX(xText, scheduledFor),
-      this.postToLinkedIn(linkedInText, scheduledFor),
-    ]);
+    console.log("📡 postToBoth called");
+    console.log("   Scheduled:", !!scheduledFor);
 
-    return { x, linkedin };
+    try {
+      console.log("🐦 Starting X post...");
+      const xPromise = this.postToX(xText, scheduledFor);
+
+      console.log("💼 Starting LinkedIn post...");
+      const linkedInPromise = this.postToLinkedIn(linkedInText, scheduledFor);
+
+      console.log("⏳ Waiting for both to complete...");
+      const [x, linkedin] = await Promise.all([xPromise, linkedInPromise]);
+
+      console.log("✅ Both posts completed");
+      return { x, linkedin };
+    } catch (error) {
+      console.error("❌ postToBoth failed:", error);
+      throw error;
+    }
   }
 
   /**
