@@ -22,6 +22,7 @@ on:
 jobs:
   generate-and-post:
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # Add this line
     
     steps:
       - name: Checkout repository
@@ -38,7 +39,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Verify secrets are set
+        run: |
+            echo "Checking secrets..."
+            if [ -z "$ANTHROPIC_API_KEY" ]; then echo "❌ ANTHROPIC_API_KEY missing"; exit 1; fi
+            if [ -z "$LATE_API_KEY" ]; then echo "❌ LATE_API_KEY missing"; exit 1; fi
+            if [ -z "$LATE_TWITTER_ACCOUNT_ID" ]; then echo "❌ LATE_TWITTER_ACCOUNT_ID missing"; exit 1; fi
+            if [ -z "$LATE_LINKEDIN_ACCOUNT_ID" ]; then echo "❌ LATE_LINKEDIN_ACCOUNT_ID missing"; exit 1; fi
+            echo "✅ All secrets present"
+            echo "LATE_API_KEY starts with: ${LATE_API_KEY:0:7}"
+            echo "TWITTER_ID starts with: ${LATE_TWITTER_ACCOUNT_ID:0:8}"
+        env:
+            ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+            LATE_API_KEY: ${{ secrets.LATE_API_KEY }}
+            LATE_TWITTER_ACCOUNT_ID: ${{ secrets.LATE_TWITTER_ACCOUNT_ID }}
+            LATE_LINKEDIN_ACCOUNT_ID: ${{ secrets.LATE_LINKEDIN_ACCOUNT_ID }}
+
+      - name: Test Late.dev connection
+        env:
+            LATE_API_KEY: ${{ secrets.LATE_API_KEY }}
+            LATE_TWITTER_ACCOUNT_ID: ${{ secrets.LATE_TWITTER_ACCOUNT_ID }}
+            LATE_LINKEDIN_ACCOUNT_ID: ${{ secrets.LATE_LINKEDIN_ACCOUNT_ID }}
+        run: npm run test-late
+
       - name: Run automated posting
+        timeout-minutes: 8  # Add this line
+        
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LATE_API_KEY: ${{ secrets.LATE_API_KEY }}

@@ -10,7 +10,8 @@
     "generate": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "auto-post": "tsx src/autoPoster.ts",
-    "get-accounts": "tsx src/get-accounts.ts"
+    "get-accounts": "tsx src/get-accounts.ts",
+    "test-late": "tsx src/test-late-connection.ts"
   },
   "keywords": [
     "ai",
