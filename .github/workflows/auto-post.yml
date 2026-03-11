@@ -51,7 +51,7 @@ jobs:
             npm run generate -- "${{ github.event.inputs.topic }}" --publish
           else
             echo "Running automated topic selection"
-            npx tsx src/auto-poster.ts
+            npx tsx src/autoPoster.ts
           fi
       
       - name: Commit updated topics.json
