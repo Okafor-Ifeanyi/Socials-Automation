@@ -29,6 +29,26 @@ export class LatePublisher {
     }
   }
 
+
+  /**
+   * Wrapper to add timeout to any promise
+   */
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number = 30000,
+    operation: string = 'Operation'
+  ): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`${operation} timed out after ${timeoutMs}ms`)),
+          timeoutMs
+        )
+      ),
+    ]);
+  }
+
   /**
    * Post to X (Twitter)
    */
@@ -53,9 +73,20 @@ export class LatePublisher {
     console.log("🐦 Posting to Twitter...");
 
     try {
-      const { post } = await this.late.posts.createPost({
-        body: requestBody, // <-- ADD "body:" HERE
-      });
+      const post = await this.withTimeout(
+        this.late.posts.createPost({ body: requestBody }),
+        30000,
+        'Twitter post'
+      );
+      
+      console.log('DEBUG [postToX]: API call completed');
+
+      if (!post) {
+        console.error("❌ Unexpected response structure:", post);
+        throw new Error("API returned unexpected response structure");
+      }
+
+      console.log("✅ Tweet posted!");
       return post as LatePostResponse;
     } catch (error) {
       console.error("❌ Twitter posting failed:", error);
@@ -92,9 +123,13 @@ export class LatePublisher {
     console.log("💼 Posting to LinkedIn...");
 
     try {
-      const response = await this.late.posts.createPost({
-        body: requestBody,
-      });
+     
+
+      const response = await this.withTimeout(
+        this.late.posts.createPost({ body: requestBody }),
+        30000,
+        'LinkedIn post'
+      );
 
       // DEBUG: Log the full response
       if (!response || !response.data.post) {
