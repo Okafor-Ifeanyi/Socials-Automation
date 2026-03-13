@@ -125,7 +125,7 @@ export class LatePublisher {
     try {
      
 
-      const response = await this.withTimeout(
+      const response: any = await this.withTimeout(
         this.late.posts.createPost({ body: requestBody }),
         30000,
         'LinkedIn post'
