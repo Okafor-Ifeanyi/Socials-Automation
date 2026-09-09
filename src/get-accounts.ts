@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import Late from '@getlatedev/node';
+import { Late } from '@getlatedev/node';
 import 'dotenv/config';
 
 async function getAccounts() {

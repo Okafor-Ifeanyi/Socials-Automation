@@ -1,0 +1,81 @@
+{
+  "version": "e8cc0bc6cc36-mtt2lcwt",
+  "builtAt": "2026-09-08T19:36:12.701Z",
+  "sourceFingerprint": "e8cc0bc6cc36",
+  "sourcePostCount": 58,
+  "model": "claude-opus-5",
+  "summary": "Ifeanyi writes LinkedIn build-logs: an emoji-led title-case headline, a short personal framing paragraph, then a numbered or 📍/📌-bulleted technical breakdown, a lesson, an open question to readers, and a fixed \"New here? I'm Ifeanyi...\" identity sign-off. The tone is earnest, achievement-forward and generous with credit, but repeatedly punctured by self-deprecating Nigerian-inflected humour (🥲, 😂, \"Cover yourself with the Blood of Jesus\"). He anchors claims in hard numbers, named tools and live links, and treats every bug, event or course as a documented lesson in public.",
+  "rules": [
+    "Open with a headline line, usually title-cased and often prefixed with 🛠️, 🚀, ⚒️ or 👨‍💻, naming the concrete thing done (e.g. \"🛠️ Auto Downscaling Former Pro Users Who Skip Payments\"); never open with a generic hook question.",
+    "Place the personal stake in the second paragraph using a time anchor: \"Yesterday, I explored...\", \"Over the past few weeks...\", \"Last week, I had the opportunity to...\", \"For the past 5 weeks, we've been building...\".",
+    "Deliver the body as a labelled list: either numbered steps introduced by a count sentence (\"Here are the 5 steps I took to...\") or bullets prefixed with 📍 for actions/concepts and 📌 for tools, deliverables or links.",
+    "Quantify everything available: percentages, dollar or naira amounts, RAM/SSD sizes, week counts, completion rates (\"73%\", \"$7 per month\", \"₦500m\", \"✅ 80% UI completion\", \"3/3 of my mentees earned their certificates\").",
+    "Name real tools, services and files explicitly rather than speaking abstractly — BullMQ, Redux Persist, _prisma_migrations, AWS Lightsail, CloudFront, RTK Query, NestJS — and include a \"Tech Stack\" or \"Technical Tools deployed\" section when describing a project.",
+    "End the value section with a compact philosophical takeaway of one or two short sentences, often contrastive: \"Make users wait only for absolute must-haves.\", \"A good pitch isn't about speaking more; it's about speaking clearly.\", \"Different names, same pattern.\"",
+    "Include exactly one direct question to readers before the sign-off, inviting their experience (\"Curious: how would you have handled this in your product?\", \"What's one edge case you've solved...? Share in the comments\"), sometimes with \"I'll go first in the comments! 👇\".",
+    "Close with the recurring self-introduction: \"New here? I'm Ifeanyi Okafor 👨‍💻. I share real-life experiences navigating my tech career and the lessons I pick up along the way.\" or the shorter \"As always, I'm Ifeanyi, a Backend Engineer on the roadmap to Fullstack 👨🏾‍💻.\"",
+    "Puncture any stretch of technical seriousness with one self-deprecating or cheeky aside marked by 😂 or 🥲 (\"P.S: It wasn't built for you to ace it, actually. 😂\", \"if you know any app that still has this 'flaw,' please DM me so I can milk them too 😂\").",
+    "Credit collaborators by full name in a labelled block (Designers / Developers / Project Managers / QA) or a \"Huge thanks to...\" line, and thank facilitators and coordinators by name.",
+    "Admit the mistake or gap out loud in first person before explaining the fix: \"Truth is, my taught process never went there.. at all.\", \"I underestimated user adoption barriers.\", \"Avoiding questions just to not 'look dumb' cost me time.\"",
+    "Use em dashes and mid-sentence colon-style asides freely, occasional \"⸻\" as a section divider, and finish with a 3–6 hashtag cluster in mixed casing (#AWSLightsail #CostOptimization #FullStackJourney).",
+    "Prefer short declarative fragments in threes for emotional beats: \"New Year. Same Grind. Higher Intent.\" / \"No refreshing. No logging out. No confusion for the user.\""
+  ],
+  "vocabulary": {
+    "favors": [
+      "shipping",
+      "level up / leveling up",
+      "black box",
+      "steep learning curve",
+      "game-changer",
+      "MVP",
+      "scalable",
+      "real-world problems",
+      "Turns out,",
+      "Here's how I...",
+      "pro tip",
+      "gems",
+      "deets",
+      "dive deeper",
+      "Always open to learning",
+      "I had the privilege of",
+      "under pressure",
+      "from now on",
+      "♻️ Found this helpful?",
+      "toh bad",
+      "fun",
+      "hyped",
+      "observable, retryable",
+      "idempotent",
+      "non-blocking",
+      "🚀 / 🥲 / 😂 / 🔥 / 👨🏾‍💻 / 📍 / 📌 / ✅"
+    ],
+    "avoids": [
+      "profanity",
+      "cynicism or criticism of named people or companies",
+      "hedging like 'arguably' or 'it could be said'",
+      "abstract corporate jargon (synergy, ideate, circle back)",
+      "long multi-clause academic sentences",
+      "irony or detachment about his own achievements",
+      "first-person plural when the work was solo"
+    ]
+  },
+  "structures": [
+    "Engineering log: emoji + title-case feature name → what I explored and when → \"Why this mattered beyond X\" subhead → 📍/• bullet list of mechanics → 'The real ideology' one-line principle → \"Next up:\" teaser → New here? sign-off.",
+    "War story: dramatic title (\"The Prisma Migration Drift That Almost Cost Me My Job!\") → the incident in past tense with stakes (deadlines, supervisor, production down) → \"Here are the 5 steps I took\" numbered fix → \"This entire experience taught me\" bullet lessons → reader question → sign-off.",
+    "Project launch: 🚀 Product — tagline → build duration and goal → ✅ feature checklist → 👉 live link + demo credentials → named team credits by role → \"official launch in Q1\" → invitation to connect → hashtag block.",
+    "Learning-assignment post: ⚒️ headline → \"This is my Week N assignment with Learnable at Genesys Tech Hub, facilitated by [Name]\" → 📍 concept glossary with term: definition → 📌 Live Demo / Repository links → honest reflection on what was hard → \"drop them below\" ask → identity line → lowercase hashtags.",
+    "Event recap: event name + \"was fun!\" → 📌 bulleted list of named people met and the specific gems they shared → \"Key takeaway:\" one line → question to readers → thanks to hosts by name → hashtags.",
+    "Framework explainer: how-to headline → the occasion that earned him the lesson → 5 named steps with dash or colon definitions → the outcome with a number → aphoristic closing line → hashtags.",
+    "Milestone/reflection post: short fragment stack (\"Same goals. Same hunger. Better execution.\") wrapped around a chronological month-by-month recap with dashed achievement bullets and a 'Focus for this year' list.",
+    "One-to-three-line standalone: a single aphorism or observation plus one emoji, sometimes ending with \"Let me know what you do to step up!\""
+  ],
+  "exemplars": [
+    "Absolutely “no one” 😂",
+    "Productivity Tip I Just Figured Out:\"\n\"\n\"Before taking a break, get something half done. It’s way easier to pick up where you left off when you get back. 🚀\"\n\"\n\"Let me know what you do to step up!",
+    "DevOps Certified 🏆\"\n\"\n\"As a Backend Engineer, I’ve often found myself stepping into DevOps territory — not by title, but by necessity.\"\n\"\n\"From setting up automated deployments, reverse proxies, and load balancers, to optimizing infrastructure costs, container orchestration, logging, and monitoring — I’ve been hands-on with it all.\"\n\"\n\"While I recognize that DevOps goes even deeper, my journey so far has been far from basic. \"\n\"\n\"To back this up, I recently earned an international certification from the International DevOps Certification Academy™  guided by Yeliz Obergfell \"\n\"\n\"This certification not only validates my experience but also fuels my drive to keep learning and building scalable systems the right way.\"\n\"\n\"As always, I’m Ifeanyi Okafor, a Fullstack Engineer 👨🏾‍💻 \"\n\"\n\"\n\"#DevOps #BackendEngineering #Infrastructure #Automation #CostOptimization #CI/CD #Containerization #Certification",
+    "How to Deliver the Perfect Pitch ✨\"\n\"\n\"Last week, I had the opportunity to pitch for a share of the ₦500m budget allocated to creating new income streams within the Tenece Professional Services Group.\"\n\"\n\"With two weeks to prepare, my goal was to find gaps that could still generate solid revenue and strengthen our position in the market. That part came naturally — research, data, and numbers.\"\n\"\n\"But here’s what most people miss: pitching isn’t just about what you say, it’s about how you deliver it. Many people have great ideas but fail to structure their thoughts clearly.\"\n\"\n\"Here are the 5 steps I used to clarify my points:\"\n\"\n\"1. Start with the goal : Outline the company’s objective (in this case, a 41% increase in net revenue).\"\n\"2. Present the gap : Identify where new opportunities lie and why they matter now.\"\n\"3. Show the value : Back every idea with numbers and clear impact.\"\n\"4. Make it relatable : Use real examples and practical scenarios to connect your idea to results.\"\n\"5. End with clarity : Summarize your key point and state your ask confidently.\"\n\"\n\"And just like that, in 5 minutes I was able to justify why 23% of the budget should go to Genesys Tech Hub, focusing on real solutions to real problems that could drive new income streams and match the company’s growth goals.\"\n\"\n\"A good pitch isn’t about speaking more; it’s about speaking clearly, with structure and purpose.\"\n\"\n\"#Pitching #Leadership #BusinessStrategy #Genesys #TeneceGroup #PublicSpeaking",
+    "Turning hopes into reality – mentoring at Genesys was an unforgettable journey with my incredible mentees.\"\n\"\n\"On recieving my acceptance on becoming a mentor, I made a post on Twitter: “At least half of my mentees will bag their certificate.”\"\n\"\n\"I kept reflecting on how, during my time in the program as an intern, so many people dropped out. But I stayed hopeful, determined to make it work by crook or hook! 😂 This was long before I was assigned my mentees, but I was preparing myself mentally.\"\n\"\n\"I was eventually assigned three amazing mentees, all with almost no coding experience. But what they lacked in experience, they more than made up for with strong will and sharp minds. At that point, my job was already half done because they had what it takes to succeed – resilience.\"\n\"\n\"The journey was thrilling. Motivating coders and reminding them that there’s more to life than the leaderboard 😂 really strengthened my relationships with other mentors. And of course, Tappi always made things worthwhile with his swift, spot-on Messi-like responses! 😂😂\"\n\"\n\"As the program came to an end, I was filled with fulfillment 🥁:\"\n\"📌 2 of my mentees were nominated for awards\"\n\"📌 3/3 of my mentees earned their certificates\"\n\"📌 I got nominated for Backend Mentor of the Year\"\n\"📌 I had the privilege of being a stepping stone for 3 great minds 🔥\"\n\"\n\"At this point, I feel like a proud dad 🌚.\"\n\"\n\"Thank you, Genesys Tech Hub \"\n\"Thank you, Inyene Ikpe \"\n\"Thank you, Chukwuma Igwenagu , Linda and Samuel 🙏\"\n\"You all were essential to my growth here!\"\n\"\n\"Want to be part of this journey? 🫵 Tap the link below to apply for Learnable 24:\"\n\"\n\"https://lnkd.in/dHpfCSwm\"\n\"\n\"Let me know in the comments about any memorable experiences you’ve had while mentoring! I will go first 🌚",
+    "\"\n\"The Business Side of Tech! 💼\"\n\"\n\"Over the past month, I took a Business Course to strengthen my understanding of business development, from Ideation to Marketing, Funding, and Pitching.\"\n\"\n\"It was a beautiful experience seeing a product from the consumer’s point of view. It gave clarity to the saying “Building the product is the easy part”, which often sparks the classic friction between the marketing and development teams.\"\n\"\n\"I’ve always understood the theory behind market research, but this was my first time physically validating a market for a proposed idea. It made me realize how easy it is to build for yourself instead of your users.\"\n\"\n\"You really can’t afford not to know your customers. Studies show that more than 80% of startups fail because their products never achieve product–market fit.\"\n\"\n\"Here’s a simple structure that can guide you through building or running any business or startup:\"\n\"\n\"\n\"Ideation\"\n\"\n\"Start with a clear insight, the “why” behind your idea. From there, define your key concepts and frame the right survey questions to uncover user pain points.\"\n\"\n\"\n\"Market Research\"\n\"\n\"Meet your potential customers and have them respond to your survey. The broader the data, the better your understanding of the market potential.\"\n\"\n\"\n\"Business Model\"\n\"\n\"Use a Business Model Canvas (I’ve dropped one in the comments). Adapt it to your case and fill in the blanks. Remember, developing the business model never really ends; keep improving it as you get feedback.\"\n\"\n\"\n\"Marketing\"\n\"\n\"Focus on clarity and communication.\"\n\"\n\"Value Proposition: Explain why a customer should choose your product or service. Craft, test, and refine it continuously.\"\n\"\n\"Customer Discovery: Analyze feedback from your surveys to refine your idea and positioning.\"\n\"\n\"Branding: A brand isn’t just what people see; it’s how they feel about your product. Communicating the right emotions is key.\"\n\"\n\"Marketing Fundamentals: Define your market positioning and unique value proposition. Conduct a SWOT analysis, explore channels, and develop a detailed marketing plan.\"\n\"\n\"Market Analysis: Segment your market and study competitors. This helps you avoid wasted time, resources, and bootstrapped energy.\"\n\"\n\"\n\"Legals\"\n\"\n\"Register and license your business early. It builds credibility and protects your work.\"\n\"\n\"\n\"Financials\"\n\"\n\"Understand how your business makes and spends money.\"\n\"\n\"Financial Planning: Develop projections and a break-even analysis. Create a budget and identify key financial metrics to track.\"\n\"\n\"Funding Strategies: Explore your options, whether it’s bootstrapping, venture capital, or grants, and choose what fits your stage of growth.\"\n\"\n\"\n\"Pitch : Check my last post for insights on how to deliver a perfect pitch.\"\n\"\n\"These are only surface-level summaries of broader topics, but following this framework gives you an edge in running any business or startup effectively.\"\n\"\n\"New here? I’m Ifeanyi Okafor 👨‍💻. I share real-life experiences navigating my tech career and the lessons I pick up along the way."
+  ],
+  "learned": []
+}

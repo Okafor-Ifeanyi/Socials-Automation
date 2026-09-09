@@ -1,0 +1,62 @@
+{
+  "2026-03-10T18-24-45-114Z-how-to-stay-productive-as-a-remote-devel": {
+    "id": "2026-03-10T18-24-45-114Z-how-to-stay-productive-as-a-remote-devel",
+    "topic": "how to stay productive as a remote developer",
+    "status": "published",
+    "generatedAt": "2026-03-10T18:24:45.114Z",
+    "voiceProfileVersion": "pre-migration",
+    "model": "claude-opus-5",
+    "drafts": {},
+    "publications": [
+      {
+        "platform": "linkedin",
+        "latePostId": "69b061e46180ca68ab648c6b",
+        "status": "published",
+        "publishedAt": "2026-03-10T18:24:45.114Z"
+      }
+    ],
+    "outcomes": []
+  },
+  "2026-09-08T19-36-59-892Z-the-hidden-costs-of-technical-debt": {
+    "id": "2026-09-08T19-36-59-892Z-the-hidden-costs-of-technical-debt",
+    "topic": "the hidden costs of technical debt",
+    "status": "draft",
+    "generatedAt": "2026-09-08T19:36:59.893Z",
+    "voiceProfileVersion": "e8cc0bc6cc36-mtt2lcwt",
+    "model": "claude-opus-5",
+    "drafts": {
+      "twitter": "Technical debt doesn't send you an invoice. 🥲\n\nIt bills you in 3-day bug hunts, onboarding a new dev for 2 weeks, and one migration drift at 11pm.\n\nYou don't pay it once. You pay it every sprint. 🚀",
+      "linkedin": "💸 The Hidden Costs of Technical Debt (Nobody Puts This On The Invoice)\n\nLast month, I spent 3 full days fixing a bug that should have taken 40 minutes. The fix itself was 6 lines. The other 2 days 7 hours went into understanding a service that had become a black box — no tests, no comments, and a function named handleStuff() that touched 4 tables. 🥲\n\nTruth is, I wrote part of that service. Two years ago, under pressure, shipping to a deadline. Past me was fast. Present me paid the bill.\n\nHere are the 5 hidden costs I've actually measured on real projects:\n\n📍 1. The Onboarding Tax — a new dev took 2 weeks to make a first meaningful PR on our legacy module, vs 3 days on the newer NestJS service. Same team, same talent. Different debt.\n\n📍 2. The Fear Tax — nobody wants to touch the payment logic. So we build around it instead of through it. Every workaround becomes tomorrow's debt. Different names, same pattern.\n\n📍 3. The Infra Tax — an unoptimized query set was quietly costing us extra RAM on our AWS Lightsail instance. One index and a Redis cache layer later, we dropped an instance tier and saved about $14 per month. Small money — but it was leaking for 9 months.\n\n📍 4. The Estimate Tax — every feature estimate on the old codebase carried a silent 2x multiplier. We weren't estimating work. We were estimating archaeology.\n\n📍 5. The Morale Tax — the one nobody quantifies. Engineers get tired of shipping into a swamp.\n\nHere's how I started paying it down without stopping delivery:\n\n📌 The Boy Scout Rule — every ticket, leave one file better than you met it. Rename one variable. Add one test.\n📌 A debt.md in the repo — logged, dated, with the cost of NOT fixing it in hours or naira. Debt you can see is debt you can prioritize.\n📌 20% of every sprint reserved for it. Not \"when we have time.\" We never have time.\n📌 Fix the thing you're already touching, not the thing that annoys you most.\n\nTech Stack we cleaned up: NestJS, Prisma, BullMQ for the retryable jobs we used to run inline, Redis, AWS Lightsail.\n\nTechnical debt isn't a code problem. It's a compound interest problem — and you pay it in engineer-hours, not dollars.\n\nP.S: I once found a TODO comment dated 2021 with my own name on it. Cover yourself with the Blood of Jesus. 😂\n\nCurious: what's the most expensive piece of technical debt you've ever paid off — and how long had it been sitting there? I'll go first in the comments! 👇\n\nNew here? I'm Ifeanyi Okafor 👨‍💻. I share real-life experiences navigating my tech career and the lessons I pick up along the way.\n\n#TechnicalDebt #BackendEngineering #SoftwareEngineering #CodeQuality #CostOptimization #FullStackJourney"
+    },
+    "publications": [],
+    "outcomes": []
+  },
+  "2026-09-08T19-37-22-404Z-lessons-from-production-bugs": {
+    "id": "2026-09-08T19-37-22-404Z-lessons-from-production-bugs",
+    "topic": "lessons from production bugs",
+    "status": "draft",
+    "generatedAt": "2026-09-08T19:37:22.405Z",
+    "voiceProfileVersion": "e8cc0bc6cc36-mtt2lcwt",
+    "model": "claude-opus-5",
+    "drafts": {
+      "twitter": "Every production bug I've shipped taught me the same thing:\n\nThe bug is never the bug. It's the assumption I never wrote down. 🥲\n\nLogs > guesses. Always.",
+      "linkedin": "🛠️ What 3 Production Bugs Taught Me About Writing Safer Code\n\nOver the past few months, I've had my fair share of \"why is this happening in prod but not on my machine?\" moments. Each one cost me sleep, but each one also handed me a lesson I now carry into every feature I ship.\n\nHere are the 3 that changed how I write code:\n\n📍 1. The Duplicate Charge\nA payment webhook fired twice. Two charges, one user, one very unhappy support ticket. Truth is, my thought process never went there.. at all. I assumed the provider would call me once.\nFix: made the handler idempotent with a unique event ID check in Redis before processing.\nLesson: assume every external call will happen twice.\n\n📍 2. The Silent Queue\nA BullMQ job kept failing quietly for 4 days. No alert, no retry, no log. We only found out when a user asked why their export never arrived.\nFix: retryable jobs with exponential backoff + a dead-letter queue we actually monitor.\nLesson: a job you can't observe is a job that isn't running.\n\n📍 3. The Migration Drift\n_prisma_migrations on staging and production disagreed. Deploy failed at 11pm. Cover yourself with the Blood of Jesus 😂\nFix: locked migrations into CI so nothing reaches prod unless the history matches.\nLesson: your schema is state, treat it like state.\n\n⸻\n\nWhat I noticed across all three:\n\n📌 Every bug was an assumption I never wrote down\n📌 Every fix was cheaper than the debugging\n📌 Every one of them was invisible until a user felt it\n\nDifferent names, same pattern.\n\nThe real ideology: you don't prevent production bugs by writing perfect code. You prevent them by making your system observable enough to tell you when the code isn't perfect.\n\nNext up: I'm setting up structured logging + alerting so the system complains before the user does.\n\nCurious: what's one production bug that permanently changed how you write code? Share in the comments — I'll go first! 👇\n\nNew here? I'm Ifeanyi Okafor 👨‍💻. I share real-life experiences navigating my tech career and the lessons I pick up along the way.\n\n#BackendEngineering #ProductionBugs #Observability #Idempotency #BullMQ #FullStackJourney"
+    },
+    "publications": [],
+    "outcomes": []
+  },
+  "2026-09-08T19-39-12-121Z-effective-communication-in-distributed-t": {
+    "id": "2026-09-08T19-39-12-121Z-effective-communication-in-distributed-t",
+    "topic": "effective communication in distributed teams",
+    "status": "draft",
+    "generatedAt": "2026-09-08T19:39:12.121Z",
+    "voiceProfileVersion": "e8cc0bc6cc36-mtt2lcwt",
+    "model": "claude-opus-5",
+    "drafts": {
+      "twitter": "Remote work pro tip:\n\nWrite the update before someone asks for it.\n\nHalf the \"communication problems\" in distributed teams are just people waiting on each other in different timezones. 🥲\n\nOver-communicate. It's cheaper than a blocked sprint.\n\nLet me know how you keep your team in sync! 🚀",
+      "linkedin": "📌 The Standup That Cost Us 3 Days of Work\n\nLast month, I was on a fully distributed sprint — designers in Enugu, a QA on WAT+2, and me shipping backend endpoints between Lagos traffic and midnight deploys.\n\nI built out an entire payments verification flow. Idempotent, retryable, observable — the whole gospel. Then the frontend dev pinged: \"where's the webhook status field?\"\n\nTurns out, the contract we \"agreed\" on lived in a voice note. 🥲\n\n3 days of rework. Not because anyone was careless, but because we never wrote anything down.\n\nHere are the 5 things we changed after that:\n\n1. Written contracts first — every endpoint gets a documented request/response shape in Swagger before a single line of logic. If it's not written, it doesn't exist.\n\n2. Async-by-default updates — daily written standups in the channel: what I shipped, what I'm blocked on, what I need from you. No meeting required.\n\n3. Decisions live in the repo — we moved architecture calls out of DMs and into a /docs folder. DMs are a black box; nobody can search your chat history.\n\n4. Timezone-aware asks — I stopped asking \"you around?\" and started asking the full question with context, so the answer arrives while I sleep.\n\n5. One owner per task — no shared ownership. Shared ownership in a distributed team means nobody moves.\n\nWhy this mattered beyond the sprint:\n\n📍 Rework dropped noticeably — we shipped the next feature in 4 days instead of 9\n📍 ✅ 100% of API changes now documented before merge\n📍 Onboarding a new dev took hours, not a week of \"who do I ask?\"\n\nThe real ideology: in a co-located team, communication is a habit. In a distributed one, it's infrastructure. You have to build it on purpose.\n\nI'll be honest — the mistake was mine. Avoiding a 5-minute doc just to keep momentum cost me 3 days. Momentum without clarity is just fast movement in the wrong direction.\n\nP.S: I still send voice notes. Just with a follow-up message summarizing them now. 😂\n\nCurious: what's one communication rule that saved your distributed team? Share in the comments — I'll go first! 👇\n\nNew here? I'm Ifeanyi Okafor 👨‍💻. I share real-life experiences navigating my tech career and the lessons I pick up along the way.\n\n#RemoteWork #DistributedTeams #SoftwareEngineering #TeamCommunication #FullStackJourney"
+    },
+    "publications": [],
+    "outcomes": []
+  }
+}

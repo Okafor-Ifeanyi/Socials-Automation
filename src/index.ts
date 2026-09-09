@@ -1,158 +1,116 @@
 #!/usr/bin/env node
-import { ContentGenerator } from './content-generator.js';
-import { LatePublisher } from './late-publisher.js';
-import * as fs from 'fs';
-import * as path from 'path';
-import type { ILinkedIn, PostsData, SavedOutput } from './types.js';
-import dotenv from 'dotenv';
-import { parse } from 'csv-parse/sync';
+import 'dotenv/config';
+import * as ledger from './ledger.js';
+import { generateForTopic, publishRecord, describePublications } from './pipeline.js';
+import { nextSlot } from './schedule.js';
+import { PLATFORM_LABELS, REQUIRE_APPROVAL, TIMEZONE } from './config.js';
+import type { Platform } from './types.js';
 
-dotenv.config();
+const USAGE = `Usage: npm run generate -- "your topic" [options]
 
-const POSTS_FILE = './src/linkedInPosts.csv'; // exported from linkedIn directly
-const X_POSTS_FILE = './src/xPosts.csv';
+Options:
+  --publish              Publish immediately
+  --schedule             Schedule for the next posting slot (${TIMEZONE})
+  --time=<ISO_DATE>      Schedule for a specific time, e.g. 2026-09-10T09:00:00Z
 
+Without --publish or --schedule the post is saved as a draft for 'npm run review'.`;
 
-function loadPreviousPosts(): string[] {
-  if (!fs.existsSync(POSTS_FILE)) {
-    console.error(`❌ Error: ${POSTS_FILE} not found!`);
-    process.exit(1);
+function parseScheduleTime(args: string[]): Date | undefined {
+  const raw = args.find((arg) => arg.startsWith('--time='))?.split('=')[1];
+  if (!raw) return undefined;
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`Invalid --time value: "${raw}". Use ISO 8601, e.g. 2026-09-10T09:00:00Z`);
+  }
+  if (date.getTime() <= Date.now()) {
+    throw new Error(`--time is in the past: ${date.toISOString()}`);
   }
 
-  const fileContent = fs.readFileSync(POSTS_FILE, 'utf8');
-  const records: ILinkedIn[] = parse(fileContent, {
-   columns: true,          // First row = header
-    skip_empty_lines: true,
-    relax_quotes: true,     // Important for LinkedIn format
-    relax_column_count: true,
-    trim: true,
-  });
-
-   return records
-    .map((record) => {
-      if (!record.ShareCommentary) return null;
-
-      // Clean LinkedIn's excessive double quotes
-      return record.ShareCommentary
-        .replace(/""/g, '"')   // fix escaped quotes
-        .trim();
-    })
-    .filter(Boolean) as string[];
-}
-
-function saveGeneratedPosts(
-  posts: SavedOutput['posts'],
-  topic: string
-): string {
-  const dir = path.resolve("src/generated");
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const filename = path.join(dir, `generated-posts-${timestamp}.json`);
-
-  const output: SavedOutput = {
-    topic,
-    generatedAt: new Date().toISOString(),
-    posts,
-  };
-
-  fs.writeFileSync(filename, JSON.stringify(output, null, 2));
-  return filename;
+  return date;
 }
 
 async function main(): Promise<void> {
-  // Parse command line arguments
-  const args = process.argv;
-
-  const topic = args[2];
-  const shouldPublish = args.includes('--publish');
-  const shouldSchedule = args.includes('--schedule');
-  const scheduleTime = args.find(arg => arg.startsWith('--time='))?.split('=')[1];
+  const args = process.argv.slice(2);
+  const topic = args.find((arg) => !arg.startsWith('--'));
 
   if (!topic) {
-    console.log('Usage: npm run generate -- "your topic" [--publish] [--schedule --time=2026-03-10T09:00:00Z]');
-    console.log('\nOptions:');
-    console.log('  --publish              Publish immediately to X and LinkedIn');
-    console.log('  --schedule --time=...  Schedule for a specific time (ISO 8601 format)');
-    console.log('\nExamples:');
-    console.log('  npm run generate "code reviews"');
-    console.log('  npm run generate "code reviews" --publish');
-    console.log('  npm run generate "code reviews" --schedule --time=2026-03-10T09:00:00Z');
+    console.log(USAGE);
     process.exit(1);
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('❌ Error: ANTHROPIC_API_KEY not set!');
-    process.exit(1);
+    throw new Error('ANTHROPIC_API_KEY not set');
+  }
+
+  const explicitTime = parseScheduleTime(args);
+  const shouldSchedule = args.includes('--schedule') || Boolean(explicitTime);
+  const shouldPublish = args.includes('--publish');
+
+  if (shouldPublish && shouldSchedule) {
+    throw new Error('Use either --publish or --schedule, not both');
+  }
+  if ((shouldPublish || shouldSchedule) && !process.env.LATE_API_KEY) {
+    throw new Error('LATE_API_KEY not set — required for publishing');
   }
 
   console.log('🤖 AI Content Manager');
-  console.log('━'.repeat(50));
-  console.log(`📋 Topic: "${topic}"`);
-  console.log('');
+  console.log('━'.repeat(60));
+  console.log(`📋 Topic: "${topic}"\n`);
+  console.log('⏳ Generating...\n');
 
-  try {
-    // Generate posts
-    const previousPosts = loadPreviousPosts();
-    console.log(`✅ Loaded ${previousPosts.length} example posts`);
-    console.log('⏳ Generating content with Claude...\n');
+  const post = await generateForTopic(topic);
 
-    const generator = new ContentGenerator();
-    const posts = await generator.generatePosts(previousPosts, topic);
+  for (const platform of Object.keys(PLATFORM_LABELS) as Platform[]) {
+    const text = post.drafts[platform];
+    if (!text) continue;
 
-    console.log('📱 X POST:');
-    console.log('─'.repeat(50));
-    console.log(posts.xPost);
-    console.log(`(${posts.xPost.length} characters)\n`);
+    console.log(`${PLATFORM_LABELS[platform]} (${text.length} chars)`);
+    console.log('─'.repeat(60));
+    console.log(text);
+    console.log('');
+  }
 
-    console.log('💼 LINKEDIN POST:');
-    console.log('─'.repeat(50));
-    console.log(posts.linkedInPost);
-    console.log(`(${posts.linkedInPost.length} characters)\n`);
+  console.log(`💾 Saved to the ledger as ${post.id}\n`);
 
-    const filename = saveGeneratedPosts(posts, topic);
-    console.log(`💾 Saved to: ${filename}\n`);
+  if (!shouldPublish && !shouldSchedule) {
+    console.log("💡 Run 'npm run review' to approve and publish, or add --publish / --schedule.");
+    return;
+  }
 
-    // Publish if requested
-    if (shouldPublish || shouldSchedule) {
-      if (!process.env.LATE_API_KEY) {
-        console.error('❌ Error: LATE_API_KEY not set for publishing!');
-        process.exit(1);
-      }
+  // The publishing that used to sit here was commented out, so --publish and
+  // --schedule silently did nothing and exited 0.
+  //
+  // Asking for publication is itself the approval, but record it explicitly so
+  // the ledger never contains a published post with no decision attached.
+  if (REQUIRE_APPROVAL) {
+    console.log('⚠️  Approving automatically — you asked to publish directly.');
+  }
 
-      const publisher = new LatePublisher();
+  await ledger.recordReview(
+    post.id,
+    { decision: 'accepted', reviewedAt: new Date().toISOString() },
+    { ...post.drafts },
+  );
 
-      if (shouldSchedule && scheduleTime) {
-        const scheduledDate = new Date(scheduleTime);
-        console.log(`📅 Scheduling posts for ${scheduledDate.toLocaleString()}...`);
-        
-        // const result = await publisher.postToBoth(
-        //   posts.xPost,
-        //   posts.linkedInPost,
-        //   scheduledDate
-        // );
+  const approved = (await ledger.posts.get(post.id))!;
+  const scheduledFor = shouldSchedule ? explicitTime ?? nextSlot() : undefined;
 
-        // console.log('✅ Posts scheduled successfully!');
-        // console.log(`   X Post ID: ${result.x.id}`);
-        // console.log(`   LinkedIn Post ID: ${result.linkedin.id}`);
-      } else if (shouldPublish) {
-        console.log('🚀 Publishing posts immediately...');
-        
-        // const result = await publisher.postToBoth(
-        //   posts.xPost,
-        //   posts.linkedInPost
-        // );
+  if (scheduledFor) {
+    console.log(`📅 Scheduling for ${scheduledFor.toLocaleString()} (${scheduledFor.toISOString()})`);
+  } else {
+    console.log('🚀 Publishing now...');
+  }
 
-        // console.log('✅ Posts published successfully!');
-        // console.log(`   X Post ID: ${result.x.id}`);
-        // console.log(`   LinkedIn Post ID: ${result.linkedin.id}`);
-      }
-    } else {
-      console.log('💡 Tip: Add --publish to post immediately, or --schedule --time=... to schedule');
-    }
+  const publications = await publishRecord(approved, { scheduledFor });
+  describePublications(publications);
 
-  } catch (error) {
-    console.error('❌ Failed:', (error as Error).message);
-    process.exit(1);
+  if (publications.every((publication) => publication.status === 'failed')) {
+    throw new Error('Every platform failed to publish');
   }
 }
 
-main();
+main().catch((error: Error) => {
+  console.error(`\n❌ ${error.message}`);
+  process.exit(1);
+});

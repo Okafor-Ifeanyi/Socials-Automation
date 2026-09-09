@@ -1,459 +1,383 @@
 # AI Content Manager 🤖
 
-An automated content generation and publishing system that uses Claude AI to create authentic social media posts in your unique voice, then publishes them to X (Twitter) and LinkedIn.
+Writes social posts in your own voice, publishes them to X and LinkedIn, and
+learns from what actually performed — every post carries its review decision and
+its real engagement back into the voice that writes the next one.
 
-## ✨ Features
+```
+corpus ──▶ voice profile ──▶ draft ──▶ review ──▶ publish ──▶ engagement
+              ▲                                                    │
+              └──────────────── learned rules ◀────────────────────┘
+```
 
-- **Voice Cloning**: Analyzes your past posts to replicate your writing style
-- **Multi-Platform**: Generates optimized content for both X and LinkedIn
-- **Smart Publishing**: Post immediately or schedule for later
-- **CSV Import**: Load your LinkedIn and X post history directly
-- **TypeScript**: Fully typed for reliability and maintainability
-- **Cost Effective**: ~$0.02 per generation using Claude API
+---
 
-## 📋 Prerequisites
+## Before you start
 
-- Node.js 18+ installed
-- Anthropic API key ([console.anthropic.com](https://console.anthropic.com))
-- Late.dev API key ([getlate.dev](https://getlate.dev))
-- Your X and LinkedIn accounts connected to Late.dev
-- Download an archive of your data from both platforms to provide training examples.
+You'll need:
 
-## 🚀 Quick Start
+- **Node.js 18 or newer** — check with `node --version`
+- **An Anthropic API key** — [console.anthropic.com](https://console.anthropic.com)
+- **A Late.dev account** — [getlate.dev](https://getlate.dev), with your X and
+  LinkedIn accounts connected there
+- **An export of your own posts** — this is what teaches the system your voice
 
-### 1. Install Dependencies
+---
+
+## Step 1 — Install
+
 ```bash
+git clone <your-repo-url>
+cd SocialsAI
 npm install
 ```
 
-### 2. Set Up Environment Variables
+## Step 2 — Add your API keys
 
-Create a `.env` file in the root directory:
 ```bash
-# Anthropic API (for content generation)
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-
-# Late.dev API (for publishing)
-LATE_API_KEY=sk_your_late_key_here
-LATE_TWITTER_ACCOUNT_ID=your_twitter_account_id
-LATE_LINKEDIN_ACCOUNT_ID=your_linkedin_account_id
+cp .env.example .env
 ```
 
-**Getting your Late.dev Account IDs:**
+Open `.env` and fill in the first two values:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+LATE_API_KEY=sk_...
+```
+
+Leave everything else as-is for now.
+
+## Step 3 — Connect your social accounts
+
+Late needs to know *which* X and LinkedIn accounts to post to. Ask it:
+
 ```bash
 npm run get-accounts
 ```
 
-This will display your connected accounts and their IDs.
+It prints something like:
 
-### 3. Add Your Post History
+```
+LATE_TWITTER_ACCOUNT_ID=699329c...
+LATE_LINKEDIN_ACCOUNT_ID=69a74dcd...
+```
 
-Export your posts from LinkedIn and X, then place them in:
-- `src/linkedInPosts.csv` - Your LinkedIn post history
-- `src/xPosts.csv` - Your X/Twitter post history
+Copy both lines into your `.env`, then confirm everything is wired up:
 
-**How to export from LinkedIn:**
-1. Go to Settings → Data Privacy → Get a copy of your data
-2. Select "Posts" and download
-3. Rename to `linkedInPosts.csv`
-
-**How to export from X:**
-1. Go to Settings → Your Account → Download archive
-2. Extract `tweets.csv` or manually copy your best tweets
-3. Rename to `xPosts.csv`
-
-### 4. Generate Your First Post
 ```bash
-npm run generate -- "why developers should take breaks"
+npm run test-late
+```
+
+You should see `✅ X: account ID valid` and `✅ LinkedIn: account ID valid`.
+Fix any errors here before continuing — this check exists so you don't discover
+a bad key *after* generating a post.
+
+## Step 4 — Add your writing samples
+
+The system learns your voice from posts you've already written. More is better;
+aim for 50 or more, varied in length and subject.
+
+**LinkedIn:** Settings → Data Privacy → Get a copy of your data → select
+**Posts** → download. Save the CSV as `src/linkedInPosts.csv`.
+
+**X (optional):** Settings → Your Account → Download an archive. Save it as
+`src/xPosts.csv`. Any column named `text`, `tweet`, `full_text` or `content`
+is picked up automatically.
+
+> Only LinkedIn is required. If you skip X, the system still writes X posts —
+> it just learns your voice from your LinkedIn writing.
+
+## Step 5 — Build your voice profile
+
+```bash
+npm run distill-voice
+```
+
+This reads your samples once and writes `data/voice-profile.json` — a set of
+specific, checkable rules about how you write. It prints them so you can see
+what it learned:
+
+```
+📝 Ifeanyi writes LinkedIn build-logs: an emoji-led title-case headline, a short
+   personal framing paragraph, then a numbered breakdown, a lesson, an open
+   question, and a fixed identity sign-off...
+
+Rules:
+  - Open with a headline line, usually title-cased and often prefixed with 🛠️...
+  - Quantify everything available: percentages, dollar or naira amounts...
+```
+
+**Read these rules.** If they don't sound like you, your samples aren't
+representative — add more and run `npm run distill-voice -- --force`.
+
+You only do this once. Every other command reuses the profile and warns you if
+your samples have changed since.
+
+---
+
+## Writing and publishing
+
+### Write a draft
+
+```bash
+npm run generate -- "the hidden costs of technical debt"
+```
+
+Prints both posts and saves them to the ledger as a draft. Nothing is published.
+
+### Review your drafts
+
+```bash
+npm run review
+```
+
+Walks you through each pending draft:
+
+```
+[a]ccept  [e]dit  [r]eject  [s]kip  [q]uit >
+```
+
+- **accept** — good as written
+- **edit** — opens the post in your `$EDITOR` (set one, or you'll be limited to
+  single-line replacements)
+- **reject** — kill it; still recorded, because knowing what you turn down is
+  useful signal
+- **skip** — decide later
+
+Then it asks for an optional **critique**. This is the highest-value thing you
+can give the system — a sentence like *"too formal, and the opener buries the
+story"* does more for your next post than ten more samples.
+
+Finally it asks when to publish. Pressing Enter holds the post; nothing is ever
+published by default.
+
+### Publish what you approved
+
+```bash
+npm run publish-approved              # publish now
+npm run publish-approved -- --schedule  # spread across upcoming daily slots
+```
+
+### Skip the review gate
+
+If you trust a post and want it out immediately:
+
+```bash
+npm run generate -- "shipping fast" --publish
+npm run generate -- "shipping fast" --schedule
+npm run generate -- "shipping fast" --time=2026-09-12T09:00:00Z
 ```
 
 ---
 
-## 📖 Usage
+## Closing the loop
 
-### Basic Command Structure
+This is what makes the system improve rather than just repeat itself. Run it
+every few days, or let the automation do it.
+
+**1. Collect real numbers** for posts that have been live long enough to settle
+(48 hours by default):
+
 ```bash
-npm run generate -- "your topic" [flags]
+npm run sync-engagement
 ```
 
-### Available Flags
+**2. Turn results and reviews into voice rules:**
 
-| Flag | Description | Example |
-|------|-------------|---------|
-| None | Generate only (no publishing) | `npm run generate -- "code reviews"` |
-| `--publish` | Generate and publish immediately | `npm run generate -- "AI tools" --publish` |
-| `--schedule --time=<ISO_DATE>` | Schedule for a specific time | `npm run generate -- "productivity" --schedule --time=2026-03-10T09:00:00Z` |
-
-### Detailed Examples
-
-#### 1. Generate Content Only (No Publishing)
 ```bash
-npm run generate -- "the importance of code reviews"
+npm run distill-voice -- --learn
 ```
 
-**Output:**
-- Displays generated X and LinkedIn posts
-- Saves to `generated/generated-posts-<timestamp>.json`
-- Does NOT publish anywhere
+```
+📚 2 new rule(s) learned:
+  - Lead with the number, not the setup — posts opening on a concrete figure
+    outperformed narrative openers.
+    (engagement: 4 posts, mean engagement rate 3.1 vs 1.4)
+```
 
-**Use this when:**
-- You want to review content before posting
-- Testing your prompt/style training
-- Building a content library
+New rules only appear when a pattern holds across several posts, so one unusually
+good or bad post can't swing your voice. Rules are capped at 25; the oldest
+retire as new ones arrive.
 
 ---
 
-#### 2. Generate and Publish Immediately
-```bash
-npm run generate -- "building in public as a developer" --publish
-```
+## Running it on autopilot
 
-**Output:**
-- Generates content
-- Posts to X immediately
-- Posts to LinkedIn immediately
-- Returns post IDs and URLs
+`.github/workflows/auto-post.yml` runs the whole loop for you.
 
-**Use this when:**
-- You trust your style training
-- You want instant publishing
-- You're actively managing your feed
+**Add these repository secrets** (Settings → Secrets and variables → Actions):
 
----
+| Secret | Value |
+|---|---|
+| `ANTHROPIC_API_KEY` | your Anthropic key |
+| `LATE_API_KEY` | your Late key |
+| `LATE_TWITTER_ACCOUNT_ID` | from `npm run get-accounts` |
+| `LATE_LINKEDIN_ACCOUNT_ID` | from `npm run get-accounts` |
 
-#### 3. Generate and Schedule for Later
-```bash
-npm run generate -- "5 debugging tips" --schedule --time=2026-03-10T09:00:00Z
-```
+**What runs when:**
 
-**Output:**
-- Generates content
-- Schedules X post for specified time
-- Schedules LinkedIn post for specified time
-- Returns scheduled post IDs
+| Schedule | Job | What it does |
+|---|---|---|
+| Mon/Wed/Fri 09:00 UTC | `post` | Picks a topic by past performance, writes it, publishes |
+| Daily 07:00 UTC | `measure` | Collects engagement, folds it into your voice profile |
 
-**Use this when:**
-- Planning content calendar
-- Posting at optimal engagement times
-- Maintaining consistent posting schedule
+**Optional repository *variables*** to change behaviour without touching code:
 
-**Time format:** ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)
+| Variable | Default | Effect |
+|---|---|---|
+| `POST_MODE` | `now` | `now`, `schedule`, or `draft` |
+| `REQUIRE_APPROVAL` | `false` | `true` puts the review gate in front of your accounts |
+| `POST_TIMEZONE` | `UTC` | e.g. `Africa/Lagos` |
+| `POST_HOUR` | `9` | Local hour to post at |
 
----
+> **Recommended:** set `REQUIRE_APPROVAL` to `true` and `POST_MODE` to `draft`.
+> The automation then queues posts instead of publishing them, and you approve
+> them with `npm run review`. This is also the only way the loop collects review
+> signal to learn from.
 
-## 📂 Project Structure
-```
-SocialsAI/
-├── src/
-│   ├── content-generator.ts    # Claude API integration
-│   ├── late-publisher.ts       # Late.dev publishing
-│   ├── index.ts               # Main CLI entry point
-│   ├── types.ts               # TypeScript interfaces
-│   ├── linkedInPosts.csv      # Your LinkedIn history
-│   └── xPosts.csv             # Your X/Twitter history
-├── generated-posts/           # All generated content saved here
-├── .env                       # API keys (DO NOT COMMIT)
-├── package.json
-├── tsconfig.json
-└── README.md
-```
+You can also trigger a run by hand: **Actions → Automated Content Posting → Run
+workflow**, where you can supply a specific topic or collect engagement only.
 
 ---
 
-## 🎯 How It Works
+## Editing your topic list
 
-### Step 1: Style Training
-The system loads your past posts and analyzes:
-- Your sentence structure and rhythm
-- Your vocabulary and tone
-- How you use punctuation and formatting
-- Your narrative style and storytelling patterns
+`src/topics.json` is a plain list. Add or remove lines freely:
 
-### Step 2: Content Generation
-Claude generates two versions:
-- **X Post**: 280 characters max, punchy and attention-grabbing
-- **LinkedIn Post**: Up to 3,000 characters, long-form storytelling
-
-### Step 3: Publishing (Optional)
-Late.dev handles:
-- Multi-platform posting with one API call
-- Scheduling with timezone handling
-- Status tracking and delivery confirmation
-
----
-
-## 📊 Output Examples
-
-### Console Output
-```bash
-🤖 AI Content Manager
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 Topic: "the importance of code reviews"
-
-✅ Loaded 58 example posts
-⏳ Generating content with Claude...
-
-📱 X POST:
-──────────────────────────────────────────────────
-Code reviews aren't about finding bugs.
-They're about spreading knowledge.
-The real value? Junior devs learn from seniors.
-Seniors stay humble. Everyone writes better code.
-(176 characters)
-
-💼 LINKEDIN POST:
-──────────────────────────────────────────────────
-I used to think code reviews were a waste of time...
-[full post content]
-(2,450 characters)
-
-💾 Saved to: generated-posts/generated-posts-2026-03-05T10-42-35-713Z.json
-
-🚀 Publishing posts immediately...
-🐦 Posting to Twitter...
-✅ Tweet posted! 69a95e1f590110394a79457d
-🔗 URL: https://twitter.com/...
-
-💼 Posting to LinkedIn...
-✅ LinkedIn post published! 69a95e1f590110394a79457d
-🔗 URL: https://www.linkedin.com/feed/update/...
-
-✅ Posts published successfully!
-```
-
-### Saved JSON Format
 ```json
 {
-  "topic": "the importance of code reviews",
-  "generatedAt": "2026-03-05T10:42:35.713Z",
-  "posts": {
-    "xPost": "Code reviews aren't about finding bugs...",
-    "linkedInPost": "I used to think code reviews were..."
-  }
+  "topics": [
+    "why code reviews matter for team growth",
+    "the hidden costs of technical debt"
+  ]
 }
 ```
 
----
-
-## 💰 Costs
-
-### Anthropic API (Claude)
-- **Cost per generation**: ~$0.01-0.03
-- **Monthly (1 post/day)**: ~$0.60-0.90
-- **Yearly (1 post/day)**: ~$7-11
-
-### Late.dev API
-- Free tier: 50 posts/month
-- Pro tier: Unlimited posts, $10/month
-
-**Total monthly cost for daily posting**: ~$11
+The system tracks usage and performance in the ledger, not in this file, so you
+never need to edit it except to change what you write about. Untouched topics
+get tried first; after that, selection favours what performed well.
 
 ---
 
-## 🛠️ Advanced Configuration
+## All commands
 
-### Custom Generation Options
+| Command | What it does |
+|---|---|
+| `npm run distill-voice` | Build or refresh your voice profile |
+| `npm run distill-voice -- --force` | Rebuild even if samples haven't changed |
+| `npm run distill-voice -- --learn` | Fold reviews and engagement into the profile |
+| `npm run generate -- "topic"` | Write a draft |
+| `npm run review` | Approve, edit or reject drafts |
+| `npm run publish-approved` | Publish everything approved |
+| `npm run auto-post` | Pick a topic and write it (what the schedule runs) |
+| `npm run sync-engagement` | Pull real engagement for settled posts |
+| `npm run get-accounts` | List your Late account IDs |
+| `npm run test-late` | Verify the publishing path |
+| `npm test` | Run the self-checks |
+| `npm run typecheck` | Type-check without building |
+| `npm run build` | Compile to `dist/` |
+| `npm run migrate` | One-time migration off the old file layout |
 
-You can customize generation parameters in `src/content-generator.ts`:
-```typescript
-const options = {
-  xMaxLength: 280,              // X character limit
-  linkedInMaxLength: 3000,       // LinkedIn character limit
-  tone: 'professional but conversational' // Desired tone
-};
+---
 
-const posts = await generator.generatePosts(myPosts, topic, options);
+## Settings
+
+Everything below is optional and lives in `.env`. See `.env.example` for the
+complete list.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `CLAUDE_MODEL` | `claude-opus-5` | Set to `claude-sonnet-5` for cheaper runs |
+| `GENERATION_EFFORT` | `medium` | Thinking depth when writing |
+| `REQUIRE_APPROVAL` | `true` | Block publishing until reviewed |
+| `POST_TIMEZONE` | `UTC` | IANA zone your posting hour is in |
+| `POST_HOUR` | `9` | Local hour to publish at |
+| `OUTCOME_DELAY_HOURS` | `48` | Settling time before reading engagement |
+| `SIMILARITY_THRESHOLD` | `0.5` | Overlap above which a draft counts as a repeat |
+| `TOPIC_EXPLORE_RATE` | `0.7` | Chance of trying an untouched topic |
+| `MAX_LEARNED_RULES` | `25` | Cap on accumulated voice rules |
+| `DATA_DIR` | `./data` | Where the ledger and voice profile live |
+
+---
+
+## How it's put together
+
+```
+src/
+  config.ts             every tunable, in one place
+  store.ts              the persistence seam — swap this for a database
+  types.ts              domain model
+  corpus.ts             CSV loading, fingerprinting, exemplar selection
+  voice-profile.ts      distillation + learning from outcomes
+  content-generator.ts  generation (cached prefix, schema-enforced output)
+  dedupe.ts             similarity against what you've already written
+  schedule.ts           timezone-correct posting slots
+  late-publisher.ts     Late.dev, with one response-normalisation point
+  ledger.ts             the system of record
+  topics.ts             performance-weighted topic selection
+  pipeline.ts           steps shared by the CLI and the automation
+  prompt.ts             console prompting with safe defaults
+  selftest.ts           npm test
+data/
+  posts.json            the ledger: draft → review → publication → outcome
+  voice-profile.json    your distilled voice
+  archive/              pre-migration files, not versioned
 ```
 
-### Tone Options
-
-- `'professional but conversational'` (default)
-- `'casual and authentic'`
-- `'technical and detailed'`
-- `'motivational and inspiring'`
-- `'humorous and relatable'`
-
 ---
 
-## 🔮 Roadmap & Future Features
+## Costs
 
-### Coming Soon
+Your voice profile is cached between calls, so a typical post costs a few cents
+on `claude-opus-5` and less on `claude-sonnet-5`. Distillation is a one-off per
+change to your samples.
 
-#### 1. **Feedback Loop System** 🔄
-```typescript
-// Give feedback on generated posts to improve future content
-await generator.provideFeedback(postId, {
-  quality: 4/5,
-  critique: "Too formal, be more casual",
-  improvements: ["Add more personal anecdotes", "Shorter sentences"]
-});
-```
+Check that caching is working:
 
-#### 2. **Learning from Critiques** 📚
-- Store feedback in a database
-- Use past feedback to refine prompts
-- Continuously improve voice matching
-
-#### 3. **Interactive Review Mode** ✅
 ```bash
-npm run generate -- "topic" --review
-```
-- Review each post before publishing
-- Edit content inline
-- Approve or regenerate
-- Learn from edits automatically
-
-#### 4. **Performance Analytics** 📈
-- Track engagement metrics per post
-- Identify best-performing topics
-- Suggest optimal posting times
-- A/B test different styles
-
-#### 5. **Multi-Account Support** 👥
-- Manage multiple brands/personas
-- Switch between voice profiles
-- Cross-post to different account sets
-
----
-
-## 🐛 Troubleshooting
-
-### "ANTHROPIC_API_KEY not set"
-**Solution:** Create `.env` file with your API key
-```bash
-echo "ANTHROPIC_API_KEY=your-key-here" > .env
+DEBUG_USAGE=true npm run generate -- "a topic"
+# 🔢 tokens — uncached in 70, cache write 0, cache read 5367, out 904
 ```
 
-### "LATE_API_KEY not set for publishing"
-**Solution:** Add Late.dev credentials to `.env`
-```bash
-# Run this to see your account IDs
-npm run get-accounts
-
-# Add to .env
-echo "LATE_API_KEY=your-late-key" >> .env
-echo "LATE_TWITTER_ACCOUNT_ID=acc_xyz" >> .env
-echo "LATE_LINKEDIN_ACCOUNT_ID=acc_abc" >> .env
-```
-
-### "Posts don't sound like me"
-**Solutions:**
-1. Add more example posts (aim for 50-100)
-2. Include diverse examples (technical, personal, short, long)
-3. Use your most representative posts, not just popular ones
-4. Adjust the `tone` parameter in generation options
-
-### "Invalid JSON in request body"
-**Solution:** This is usually a Late.dev API issue. Check:
-1. Your API key is valid
-2. Account IDs are correct
-3. You have publishing credits remaining
-
-### "Post scheduled at wrong time"
-**Solution:** Verify your ISO 8601 timestamp format:
-```bash
-# Correct format
---time=2026-03-10T09:00:00Z
-
-# Wrong formats
---time=2026-03-10 09:00:00  ❌
---time=03-10-2026T09:00:00Z ❌
-```
+A cache read of `0` on repeated runs means something varying leaked into the
+cached part of the prompt.
 
 ---
 
-## 📚 API Documentation
+## Troubleshooting
 
-### ContentGenerator Class
-```typescript
-import { ContentGenerator } from './content-generator';
+**"No voice profile found"**
+Run `npm run distill-voice`.
 
-const generator = new ContentGenerator(apiKey?);
+**"Post has not been reviewed"**
+`REQUIRE_APPROVAL` is on. Run `npm run review`, or publish directly with
+`--publish` / `--schedule`.
 
-// Generate both platforms
-const posts = await generator.generatePosts(
-  previousPosts: string[],
-  topic: string,
-  options?: GenerationOptions
-);
+**"LATE_API_KEY not set"**
+Add it to `.env`. If it's already there, check you copied the whole key.
 
-// Generate X only
-const xPost = await generator.generateXPost(previousPosts, topic, options);
+**"account ID not found"**
+Your `.env` account IDs don't match Late. Re-run `npm run get-accounts`.
 
-// Generate LinkedIn only
-const linkedInPost = await generator.generateLinkedInPost(previousPosts, topic, options);
-```
+**Posts don't sound like you**
+Add more samples (50+, varied), run `npm run distill-voice -- --force`, and read
+the printed rules. If a rule is wrong, your samples aren't representative.
 
-### LatePublisher Class
-```typescript
-import { LatePublisher } from './late-publisher';
+**Posts repeat themselves**
+Lower `SIMILARITY_THRESHOLD` in `.env`. The generator already retries once
+against everything you've written.
 
-const publisher = new LatePublisher(apiKey?, accountIds?);
-
-// Post to X
-await publisher.postToX(text, scheduledFor?);
-
-// Post to LinkedIn
-await publisher.postToLinkedIn(text, scheduledFor?);
-
-// Post to both (different content)
-await publisher.postToBoth(xText, linkedInText, scheduledFor?);
-
-// Get post status
-const status = await publisher.getPostStatus(postId);
-```
+**Engagement numbers are missing**
+Some Late metrics need their analytics add-on, and platforms backfill on a
+delay. `sync-engagement` records what it can and retries the rest next run.
 
 ---
 
-## 🤝 Contributing
+## Known limits
 
-This is a personal project, but feedback and suggestions are welcome! Open an issue or reach out on [LinkedIn](https://www.linkedin.com/in/ifeanyi-okafor-bio/) or [X](https://x.com/prog_BIO_).
-
----
-
-## 📄 License
-
-**Custom License - Free for Personal Use, 10% Revenue Share for Commercial**
-
-### TL;DR
-- **Personal use**: Completely free, no strings attached
-- **Commercial use** (charging others): 10% of gross revenue goes to the original author
-
-### Full Terms
-
-You may use, modify, and distribute this software for free, with the following conditions:
-
-1. **Personal & Internal Use**: Free for personal projects and internal business operations
-2. **Open Source Projects**: Free if you're not charging for access
-3. **Commercial Use**: If you charge others for a product/service using this code, you owe 10% of gross revenue to Ifeanyi Okafor
-   - Payment: Quarterly
-   - Contact: [your-email@example.com]
-   - Reporting: Basic revenue transparency required
-
-**Questions?** Reach out before launching commercially. I'm flexible and reasonable.
-
-**Warranty:** None. Use at your own risk.
-
----
-
-## 🙏 Acknowledgments
-
-- **Claude AI** by Anthropic for content generation
-- **Late.dev** for multi-platform publishing
-- Built with TypeScript, Node.js, and determination
-
----
-
-## 📞 Support
-
-Having issues? Check:
-1. This README's troubleshooting section
-2. [Anthropic API Docs](https://docs.anthropic.com)
-3. [Late.dev Documentation](https://docs.getlate.dev)
-4. Open an issue in this repository
-
----
-
-**Built by [Okafor Ifeanyi] | [https://linktr.ee/IfeanyiOkafor]**
-
-*Automating content creation, one post at a time* ✨
+- **Single user.** Account IDs are two environment variables and the ledger is
+  committed to this repo, so one person = one fork. Replacing `JsonCollection`
+  in `src/store.ts` with a real database is the first step toward multi-user.
+- **Git is the database.** The workflow commits `data/` so state survives
+  between runs. A concurrency group serialises writes; that's a guard, not a fix.
+- **Engagement depends on Late.** Metric availability varies by plan and platform.

@@ -1,15 +1,21 @@
 {
   "name": "ai-content-manager",
   "version": "1.0.0",
-  "description": "AI-powered content manager for X and LinkedIn",
-  "main": "index.js",
+  "description": "AI content manager for X and LinkedIn with a measured voice-feedback loop",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/content-generator.js",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx src/selftest.ts",
+    "start": "node dist/index.js",
     "generate": "tsx src/index.ts",
-    "dev": "tsx watch src/index.ts",
+    "review": "tsx src/review.ts",
+    "publish-approved": "tsx src/publish-approved.ts",
     "auto-post": "tsx src/autoPoster.ts",
+    "distill-voice": "tsx src/distill-voice.ts",
+    "sync-engagement": "tsx src/sync-engagement.ts",
+    "migrate": "tsx src/migrate.ts",
     "get-accounts": "tsx src/get-accounts.ts",
     "test-late": "tsx src/test-late-connection.ts"
   },
@@ -22,7 +28,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.1",
+    "@anthropic-ai/sdk": "^0.124.0",
     "@getlatedev/node": "^0.1.37",
     "csv-parse": "^6.1.0",
     "dotenv": "^16.4.5"

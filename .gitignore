@@ -24,3 +24,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Runtime state lives in data/ and is committed so the GitHub Action can carry
+# it between runs — this is the git-as-database constraint to remove first when
+# moving to multi-tenant. Archived legacy files are not worth versioning.
+data/archive/
+data/*.tmp

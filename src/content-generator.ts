@@ -1,127 +1,171 @@
-import Anthropic from "@anthropic-ai/sdk";
-import type { GeneratedPosts, GenerationOptions } from "./types.js";
+import Anthropic from '@anthropic-ai/sdk';
+import type { GeneratedPosts, GenerationOptions, VoiceProfile } from './types.js';
+import { renderProfile } from './voice-profile.js';
+import { findNearestDuplicate, type SimilarityHit } from './dedupe.js';
+import { GENERATION_EFFORT, LINKEDIN_MAX_LENGTH, MODEL, X_MAX_LENGTH } from './config.js';
 
-// My posts are generated properly, but I have insights and critiques I want to pass in to like an array so 
-// The generated code continues learning from what I think
+const POSTS_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['xPost', 'linkedInPost'],
+  properties: {
+    xPost: { type: 'string' },
+    linkedInPost: { type: 'string' },
+  },
+} as const;
 
-// The flow is not realistic for me, when a post is generated, I want to be able to give feedback on it, and have the next post be better based on that feedback.
-// So maybe I can have a function that takes in the generated post, and then I can give feedback on it, and then it can use that feedback to generate the next post.
-
+/**
+ * The closest prior post to either platform's draft.
+ *
+ * Both are checked: only the LinkedIn post used to be, and the short X posts
+ * are the formulaic ones most likely to repeat.
+ */
+function worstClash(posts: GeneratedPosts, priorPosts: string[]): SimilarityHit | undefined {
+  return [
+    findNearestDuplicate(posts.linkedInPost, priorPosts),
+    findNearestDuplicate(posts.xPost, priorPosts),
+  ]
+    .filter((hit): hit is SimilarityHit => hit !== undefined)
+    .sort((a, b) => b.score - a.score)[0];
+}
 
 export class ContentGenerator {
-  private client: Anthropic;
+  private readonly client: Anthropic;
 
   constructor(apiKey?: string) {
-    this.client = new Anthropic({
-      apiKey: apiKey || process.env.ANTHROPIC_API_KEY,
-    });
+    this.client = new Anthropic(apiKey ? { apiKey } : {});
   }
 
+  /**
+   * Write a post for each platform in the author's voice.
+   *
+   * Takes a distilled `VoiceProfile` rather than a raw corpus. The profile is
+   * rendered first and cached, so repeated generations pay for those tokens
+   * once per cache window instead of on every call.
+   */
   async generatePosts(
-    previousPosts: string[],
+    profile: VoiceProfile,
     topic: string,
     options: GenerationOptions = {},
   ): Promise<GeneratedPosts> {
+    if (!topic.trim()) throw new Error('Topic cannot be empty');
+
     const {
-      xMaxLength = 280,
-      linkedInMaxLength = 3000,
-      tone = "professional but conversational",
+      xMaxLength = X_MAX_LENGTH,
+      linkedInMaxLength = LINKEDIN_MAX_LENGTH,
+      avoidSimilarTo = [],
     } = options;
 
-    // Validate inputs
-    if (!previousPosts.length) {
-      throw new Error(
-        "At least one previous post is required for style training",
+    const system: Anthropic.TextBlockParam[] = [
+      {
+        type: 'text',
+        text:
+          'You write social posts in a specific person\'s voice, described below. ' +
+          'Follow the voice profile exactly — it is the product. Never write a post ' +
+          'that reads like generic thought-leadership.\n\n' +
+          renderProfile(profile),
+        // Stable prefix: cached across calls. Anything varying per-request goes
+        // in the user turn below, never here, or the cache never hits.
+        cache_control: { type: 'ephemeral' },
+      },
+    ];
+
+    const instructions = [
+      `Write two posts about: "${topic}"`,
+      '',
+      `1. xPost — at most ${xMaxLength} characters. Short and punchy.`,
+      `2. linkedInPost — at most ${linkedInMaxLength} characters. Longer, with a story.`,
+    ];
+
+    if (avoidSimilarTo.length) {
+      instructions.push(
+        '',
+        'You have already published the posts below. Do not repeat their angle, ' +
+          'opening line, or central metaphor — find a genuinely different way in.',
+        ...avoidSimilarTo.map((post, i) => `\nPrevious ${i + 1}:\n${post}`),
       );
     }
 
-    if (!topic.trim()) {
-      throw new Error("Topic cannot be empty");
+    const response = await this.client.messages.create({
+      model: MODEL,
+      max_tokens: 4000,
+      thinking: { type: 'adaptive' },
+      output_config: {
+        effort: GENERATION_EFFORT,
+        // Schema-enforced output. Replaces stripping markdown fences and
+        // regex-matching for a JSON object, which failed on any stray prose.
+        format: { type: 'json_schema', schema: POSTS_SCHEMA },
+      },
+      system,
+      messages: [{ role: 'user', content: instructions.join('\n') }],
+    });
+
+    if (response.stop_reason === 'refusal') {
+      throw new Error(`Generation refused: ${response.stop_details?.explanation ?? 'unknown'}`);
     }
 
-    const styleExamples = previousPosts
-      .map((post, i) => `Example ${i + 1}:\n${post}`)
-      .join("\n\n");
-
-    const prompt = `You are a content generator that writes in a specific person's voice.
-
-STYLE TRAINING - Study these examples:
-${styleExamples}
-
-YOUR TASK: Create TWO posts about "${topic}"
-1. X Post (max ${xMaxLength} chars) - short and punchy
-2. LinkedIn Post (max ${linkedInMaxLength} chars) - longer storytelling
-
-Match the exact tone from examples.
-
-CRITICAL: Return ONLY valid JSON, no markdown, no explanation, just:
-{"xPost": "...", "linkedInPost": "..."}`;
-
-    try {
-      const message = await this.client.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
-        messages: [{ role: "user", content: prompt }],
-      });
-
-      const responseText = message.content
-        .filter((block) => block.type === "text")
-        .map((block) => ("text" in block ? block.text : ""))
-        .join("");
-
-      console.log("🔍 Raw response:", responseText.substring(0, 200)); // Debug log
-
-      // Remove markdown code blocks if present
-      let cleanedText = responseText
-        .replace(/```json\s*/g, "")
-        .replace(/```\s*/g, "")
-        .trim();
-
-      // Try to extract JSON object
-      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error("❌ Full response:", responseText); // Show full response
-        throw new Error("Could not find JSON in response");
-      }
-
-      const result = JSON.parse(jsonMatch[0]) as GeneratedPosts;
-
-      // Validate response structure
-      if (!result.xPost || !result.linkedInPost) {
-        throw new Error("Invalid response structure from Claude");
-      }
-
-      // Warn about character limits
-      if (result.xPost.length > xMaxLength) {
-        console.warn(
-          `⚠️  X post is ${result.xPost.length} chars (limit: ${xMaxLength})`,
-        );
-      }
-
-      return result;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Content generation failed: ${error.message}`);
-      }
-      throw error;
+    // A cache read of zero across repeated runs means the stable prefix picked
+    // up something that varies per request, and the profile is being paid for
+    // in full every time.
+    if (process.env.DEBUG_USAGE === 'true') {
+      const { input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens } =
+        response.usage;
+      console.log(
+        `🔢 tokens — uncached in ${input_tokens}, cache write ${cache_creation_input_tokens ?? 0}, ` +
+          `cache read ${cache_read_input_tokens ?? 0}, out ${output_tokens}`,
+      );
     }
+
+    const text = response.content
+      .filter((block) => block.type === 'text')
+      .map((block) => (block as Anthropic.TextBlock).text)
+      .join('');
+
+    const posts = JSON.parse(text) as GeneratedPosts;
+
+    if (posts.xPost.length > xMaxLength) {
+      console.warn(`⚠️  X post is ${posts.xPost.length} chars (limit ${xMaxLength})`);
+    }
+
+    return posts;
   }
 
-  async generateXPost(
-    previousPosts: string[],
+  /**
+   * Generate, and retry once if the result restates something already published.
+   *
+   * A single retry is deliberate: the model gets one explicit correction, and a
+   * near-duplicate that survives it is surfaced rather than silently shipped.
+   */
+  async generateDistinctPosts(
+    profile: VoiceProfile,
     topic: string,
-    options?: GenerationOptions,
-  ): Promise<string> {
-    const result = await this.generatePosts(previousPosts, topic, options);
-    return result.xPost;
-  }
+    priorPosts: string[],
+    options: GenerationOptions = {},
+  ): Promise<{ posts: GeneratedPosts; duplicateWarning?: string }> {
+    const first = await this.generatePosts(profile, topic, {
+      ...options,
+      avoidSimilarTo: priorPosts.slice(-5),
+    });
 
-  async generateLinkedInPost(
-    previousPosts: string[],
-    topic: string,
-    options?: GenerationOptions,
-  ): Promise<string> {
-    const result = await this.generatePosts(previousPosts, topic, options);
-    return result.linkedInPost;
+    const clash = worstClash(first, priorPosts);
+    if (!clash) return { posts: first };
+
+    console.warn(
+      `♻️  Draft overlaps an earlier post (${(clash.score * 100).toFixed(0)}%). Regenerating once...`,
+    );
+
+    const second = await this.generatePosts(profile, topic, {
+      ...options,
+      avoidSimilarTo: [clash.text, ...priorPosts.slice(-4)],
+    });
+
+    const stillClashing = worstClash(second, priorPosts);
+
+    return {
+      posts: second,
+      duplicateWarning: stillClashing
+        ? `Still ${(stillClashing.score * 100).toFixed(0)}% similar to a previous post after retry`
+        : undefined,
+    };
   }
 }

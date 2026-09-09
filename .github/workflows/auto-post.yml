@@ -2,15 +2,24 @@ name: Automated Content Posting
 
 on:
   schedule:
+    # Generate and post.
     - cron: '0 9 * * 1,3,5'
+    # Collect engagement for posts that have had time to settle.
+    - cron: '0 7 * * *'
   workflow_dispatch:
     inputs:
       topic:
-        description: 'Optional: Specific topic to post about'
+        description: 'Specific topic to post about (blank = pick by past performance)'
         required: false
         type: string
-      publish_now:
-        description: 'Publish immediately instead of scheduling'
+      mode:
+        description: 'now = publish immediately, schedule = next posting slot, draft = queue for review'
+        required: false
+        type: choice
+        default: now
+        options: [now, schedule, draft]
+      sync_only:
+        description: 'Only collect engagement, do not generate'
         required: false
         type: boolean
         default: false
@@ -18,63 +27,104 @@ on:
 permissions:
   contents: write
 
+# The ledger is committed back to the repo, so two runs writing at once would
+# race on the push. Until state moves to a real database, serialise them.
+concurrency:
+  group: content-pipeline
+  cancel-in-progress: false
+
+env:
+  # Flip to 'true' to require `npm run review` before anything is published.
+  REQUIRE_APPROVAL: ${{ vars.REQUIRE_APPROVAL || 'false' }}
+  POST_TIMEZONE: ${{ vars.POST_TIMEZONE || 'UTC' }}
+  POST_HOUR: ${{ vars.POST_HOUR || '9' }}
+
 jobs:
-  generate-and-post:
+  post:
+    name: Generate and post
+    if: github.event.schedule != '0 7 * * *' && github.event.inputs.sync_only != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
+    timeout-minutes: 15
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Test Late.dev connection
+
+      - run: npm ci
+
+      - name: Verify Late connection
         env:
           LATE_API_KEY: ${{ secrets.LATE_API_KEY }}
           LATE_TWITTER_ACCOUNT_ID: ${{ secrets.LATE_TWITTER_ACCOUNT_ID }}
           LATE_LINKEDIN_ACCOUNT_ID: ${{ secrets.LATE_LINKEDIN_ACCOUNT_ID }}
         run: npm run test-late
 
-      - name: Run automated posting
-        timeout-minutes: 8
+      - name: Generate and post
+        timeout-minutes: 10
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LATE_API_KEY: ${{ secrets.LATE_API_KEY }}
           LATE_TWITTER_ACCOUNT_ID: ${{ secrets.LATE_TWITTER_ACCOUNT_ID }}
           LATE_LINKEDIN_ACCOUNT_ID: ${{ secrets.LATE_LINKEDIN_ACCOUNT_ID }}
-          SCHEDULE_POSTS: ${{ github.event.inputs.publish_now != 'true' }}
-        run: |
-          if [ -n "${{ github.event.inputs.topic }}" ]; then
-            echo "Manual topic provided: ${{ github.event.inputs.topic }}"
-            npm run generate -- "${{ github.event.inputs.topic }}" --publish
-          else
-            echo "Running automated topic selection"
-            npx tsx src/autoPoster.ts
-          fi
-      
-      - name: Commit updated topics.json
-        if: success()  # Only run if previous step succeeded
+          # Explicit, not inferred. The old workflow derived this from an empty
+          # workflow_dispatch input, so every cron run scheduled for "tomorrow
+          # 9am" and a Mon/Wed/Fri schedule published Tue/Thu/Sat.
+          POST_MODE: ${{ github.event.inputs.mode || vars.POST_MODE || 'now' }}
+          # Passed through the environment rather than interpolated into the
+          # shell, so a topic containing quotes cannot break out of the command.
+          TOPIC: ${{ github.event.inputs.topic }}
+        run: npm run auto-post
+
+      - name: Commit ledger
+        if: always()
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add src/topics.json automation-logs.jsonl src/generated/*.json || true
-          git diff --staged --quiet || git commit -m "chore: automated content update [skip ci]"
+          git add data/ || true
+          git diff --staged --quiet || git commit -m "chore: content ledger update [skip ci]"
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
           git push
-      
-      - name: Upload logs as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
+
+  measure:
+    name: Collect engagement
+    if: github.event.schedule == '0 7 * * *' || github.event.inputs.sync_only == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          name: automation-logs-${{ github.run_number }}
-          path: automation-logs.jsonl
-          retention-days: 30
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      # The return leg of the loop: read real engagement back, then let it
+      # update the voice profile that writes the next post.
+      - name: Sync engagement
+        env:
+          LATE_API_KEY: ${{ secrets.LATE_API_KEY }}
+          LATE_TWITTER_ACCOUNT_ID: ${{ secrets.LATE_TWITTER_ACCOUNT_ID }}
+          LATE_LINKEDIN_ACCOUNT_ID: ${{ secrets.LATE_LINKEDIN_ACCOUNT_ID }}
+        run: npm run sync-engagement
+
+      - name: Learn from results
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: npm run distill-voice -- --learn
+
+      - name: Commit ledger and voice profile
+        if: always()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/ || true
+          git diff --staged --quiet || git commit -m "chore: engagement sync + voice update [skip ci]"
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+          git push

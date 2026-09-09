@@ -1,75 +1,82 @@
 #!/usr/bin/env node
-import Late from '@getlatedev/node';
-import dotenv from 'dotenv';
+import 'dotenv/config';
+import { Late } from '@getlatedev/node';
+import { PLATFORM_LABELS } from './config.js';
+import type { Platform } from './types.js';
 
-dotenv.config();
+interface Account {
+  _id?: string;
+  platform?: string;
+  username?: string;
+  displayName?: string;
+  isActive?: boolean;
+}
 
-async function testConnection() {
-  console.log('🔍 Testing Late.dev connection...\n');
-
-  if (!process.env.LATE_API_KEY) {
-    console.error('❌ LATE_API_KEY not set');
-    process.exit(1);
-  }
-
-  console.log('✅ API Key present:', process.env.LATE_API_KEY.substring(0, 10) + '...');
+/**
+ * Preflight check for the publishing path — run before the workflow spends a
+ * generation on a run that was going to fail at the last step anyway.
+ *
+ * Prints identifiers and status only. It used to dump the whole raw accounts
+ * response into the CI log, which is public on a public repo.
+ */
+async function main(): Promise<void> {
+  if (!process.env.LATE_API_KEY) throw new Error('LATE_API_KEY not set');
 
   const late = new Late({ apiKey: process.env.LATE_API_KEY });
+  const response = (await late.accounts.listAccounts({})) as {
+    data?: { accounts?: Account[] };
+    accounts?: Account[];
+  };
 
-  try {
-    // Try to fetch accounts directly (no profile needed)
-    console.log('📡 Fetching accounts...');
-    const accountsResponse = await late.accounts.listAccounts({});
-    
-    console.log('✅ Successfully connected to Late.dev');
-    console.log('📦 Raw response:', JSON.stringify(accountsResponse, null, 2));
-    
-    const accounts = accountsResponse?.accounts || accountsResponse?.data?.accounts || [];
-    
-    if (accounts.length === 0) {
-      console.warn('\n⚠️  No accounts found. Have you connected your X and LinkedIn accounts at getlate.dev?');
-    } else {
-      console.log(`\n✅ Found ${accounts.length} account(s):`);
-      accounts.forEach((account: any) => {
-        console.log(`   - ${account.platform.toUpperCase()}: ${account.username || account.displayName || 'N/A'}`);
-        console.log(`     Account ID: ${account._id}`);
-      });
+  const accounts = response.data?.accounts ?? response.accounts ?? [];
+
+  if (!accounts.length) {
+    throw new Error('No accounts connected. Connect X and LinkedIn at getlate.dev first.');
+  }
+
+  console.log(`✅ Connected to Late — ${accounts.length} account(s):`);
+  for (const account of accounts) {
+    const name = account.username ?? account.displayName ?? 'unnamed';
+    console.log(
+      `   ${account.platform ?? 'unknown'}: ${name} ${account.isActive ? '(active)' : '(inactive)'}`,
+    );
+  }
+
+  const configured: [Platform, string | undefined][] = [
+    ['twitter', process.env.LATE_TWITTER_ACCOUNT_ID],
+    ['linkedin', process.env.LATE_LINKEDIN_ACCOUNT_ID],
+  ];
+
+  let problems = 0;
+
+  for (const [platform, accountId] of configured) {
+    const label = PLATFORM_LABELS[platform];
+
+    if (!accountId) {
+      console.warn(`⚠️  ${label}: no account ID configured — this platform will be skipped`);
+      continue;
     }
 
-    // Check if configured account IDs exist
-    console.log('\n🔍 Checking configured account IDs...');
-    
-    if (process.env.LATE_TWITTER_ACCOUNT_ID) {
-      const twitterExists = accounts.find((a: any) => a._id === process.env.LATE_TWITTER_ACCOUNT_ID);
-      if (twitterExists) {
-        console.log(`✅ Twitter Account ID valid: ${process.env.LATE_TWITTER_ACCOUNT_ID}`);
-      } else {
-        console.error(`❌ Twitter Account ID not found: ${process.env.LATE_TWITTER_ACCOUNT_ID}`);
-        console.log('   Available Twitter accounts:', accounts.filter((a: any) => a.platform === 'twitter').map((a: any) => a._id));
-      }
+    if (accounts.some((account) => account._id === accountId)) {
+      console.log(`✅ ${label}: account ID valid`);
     } else {
-      console.warn('⚠️  LATE_TWITTER_ACCOUNT_ID not set');
+      const available = accounts
+        .filter((account) => account.platform === platform)
+        .map((account) => account._id)
+        .join(', ');
+      console.error(
+        `❌ ${label}: configured ID not found. Available for ${platform}: ${available || 'none'}`,
+      );
+      problems += 1;
     }
-    
-    if (process.env.LATE_LINKEDIN_ACCOUNT_ID) {
-      const linkedinExists = accounts.find((a: any) => a._id === process.env.LATE_LINKEDIN_ACCOUNT_ID);
-      if (linkedinExists) {
-        console.log(`✅ LinkedIn Account ID valid: ${process.env.LATE_LINKEDIN_ACCOUNT_ID}`);
-      } else {
-        console.error(`❌ LinkedIn Account ID not found: ${process.env.LATE_LINKEDIN_ACCOUNT_ID}`);
-        console.log('   Available LinkedIn accounts:', accounts.filter((a: any) => a.platform === 'linkedin').map((a: any) => a._id));
-      }
-    } else {
-      console.warn('⚠️  LATE_LINKEDIN_ACCOUNT_ID not set');
-    }
+  }
 
-    console.log('\n✅ Connection test passed!');
-  } catch (error) {
-    console.error('❌ Connection test failed:', error);
-    console.error('   Error message:', (error as Error).message);
-    console.error('   Error stack:', (error as Error).stack);
-    process.exit(1);
+  if (problems) {
+    throw new Error(`${problems} account ID(s) misconfigured — run 'npm run get-accounts'`);
   }
 }
 
-testConnection();
+main().catch((error: Error) => {
+  console.error(`❌ ${error.message}`);
+  process.exit(1);
+});
