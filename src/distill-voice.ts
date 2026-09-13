@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import 'dotenv/config';
+import { runCli } from './cli.js';
 import { loadCorpus } from './corpus.js';
 import { distillVoiceProfile, isStale, profileStore, refineVoiceProfile } from './voice-profile.js';
 import { posts } from './ledger.js';
@@ -27,7 +28,7 @@ async function main(): Promise<void> {
     );
   }
 
-  const existing = profileStore.read();
+  const existing = await profileStore.read();
   let profile = existing;
 
   if (!existing || force || isStale(existing, corpus)) {
@@ -60,12 +61,9 @@ async function main(): Promise<void> {
   }
 
   if (profile && profile !== existing) {
-    profileStore.write(profile);
-    console.log(`\n💾 Saved to ${profileStore.path} (version ${profile.version})`);
+    await profileStore.write(profile);
+    console.log(`\n💾 Saved to ${profileStore.location} (version ${profile.version})`);
   }
 }
 
-main().catch((error: Error) => {
-  console.error(`❌ ${error.message}`);
-  process.exit(1);
-});
+runCli(main);

@@ -14,14 +14,14 @@ import type { Platform, PostRecord, Publication, VoiceProfile } from './types.js
  * them loaded the corpus correctly.
  */
 
-export function requireProfile(): VoiceProfile {
-  const profile = profileStore.read();
+export async function requireProfile(): Promise<VoiceProfile> {
+  const profile = await profileStore.read();
 
   if (!profile) {
     throw new Error(
       'No voice profile found. Build one first:\n' +
         '  npm run distill-voice\n' +
-        `It is written to ${profileStore.path} and only needs rebuilding when your corpus changes.`,
+        `It is stored at ${profileStore.location} and only needs rebuilding when your corpus changes.`,
     );
   }
 
@@ -38,7 +38,7 @@ export function requireProfile(): VoiceProfile {
 
 /** Generate a post for a topic and enter it in the ledger as a draft. */
 export async function generateForTopic(topic: string): Promise<PostRecord> {
-  const profile = requireProfile();
+  const profile = await requireProfile();
   const priorPosts = await ledger.priorPostTexts();
 
   const generator = new ContentGenerator();

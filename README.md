@@ -240,6 +240,46 @@ workflow**, where you can supply a specific topic or collect engagement only.
 
 ---
 
+## Where your data lives
+
+By default, everything is JSON files under `data/` — the ledger and your voice
+profile — and the GitHub workflow commits them back to the repo so state
+survives between runs.
+
+That works for one person on one machine. It stops working as soon as two
+things write at once, which is what happens the moment a web UI and the cron
+job both exist. Two processes appending to the same post lose each other's
+writes:
+
+```
+2 processes x 25 appends each, at the same moment
+JSON files -> 26/50 survived   <- 24 publications recorded nowhere
+Postgres   -> 50/50 survived
+```
+
+To switch, create a free Postgres database ([neon.tech](https://neon.tech) or
+[supabase.com](https://supabase.com) both have a free tier), put its connection
+string in `.env`, and copy your existing data across:
+
+```bash
+DATABASE_URL=postgres://...    # in .env
+npm run migrate-db
+```
+
+That's the whole migration. Every command now reads and writes Postgres; the
+schema is created on first connect. Your JSON files are left alone, so unset
+`DATABASE_URL` at any point to fall back to them.
+
+```bash
+npm run migrate-db -- --verify   # compare the two, write nothing
+npm run test:store               # round-trip + concurrency check on either backend
+```
+
+> Once you're on Postgres the workflow's "commit ledger" steps are dead weight —
+> state no longer lives in the repo. Leave them; they simply find nothing to
+> commit.
+
+---
 ## Editing your topic list
 
 `src/topics.json` is a plain list. Add or remove lines freely:
@@ -274,9 +314,11 @@ get tried first; after that, selection favours what performed well.
 | `npm run get-accounts` | List your Late account IDs |
 | `npm run test-late` | Verify the publishing path |
 | `npm test` | Run the self-checks |
+| `npm run test:store` | Check the storage backend, including concurrent writes |
 | `npm run typecheck` | Type-check without building |
 | `npm run build` | Compile to `dist/` |
 | `npm run migrate` | One-time migration off the old file layout |
+| `npm run migrate-db` | Copy `data/` into Postgres, then verify it matches |
 
 ---
 
@@ -305,7 +347,8 @@ complete list.
 ```
 src/
   config.ts             every tunable, in one place
-  store.ts              the persistence seam — swap this for a database
+  store.ts              the persistence seam: JSON files or Postgres
+  db.ts                 Postgres pool, schema and transactions
   types.ts              domain model
   corpus.ts             CSV loading, fingerprinting, exemplar selection
   voice-profile.ts      distillation + learning from outcomes
@@ -317,8 +360,11 @@ src/
   topics.ts             performance-weighted topic selection
   pipeline.ts           steps shared by the CLI and the automation
   prompt.ts             console prompting with safe defaults
+  cli.ts                entrypoint wrapper: error reporting, pool cleanup
   selftest.ts           npm test
-data/
+  store-check.ts        npm run test:store
+  migrate-db.ts         npm run migrate-db
+data/                   used only while DATABASE_URL is unset
   posts.json            the ledger: draft → review → publication → outcome
   voice-profile.json    your distilled voice
   archive/              pre-migration files, not versioned
@@ -375,9 +421,11 @@ delay. `sync-engagement` records what it can and retries the rest next run.
 
 ## Known limits
 
-- **Single user.** Account IDs are two environment variables and the ledger is
-  committed to this repo, so one person = one fork. Replacing `JsonCollection`
-  in `src/store.ts` with a real database is the first step toward multi-user.
-- **Git is the database.** The workflow commits `data/` so state survives
-  between runs. A concurrency group serialises writes; that's a guard, not a fix.
+- **Single user.** Account IDs are two environment variables, so one person =
+  one fork. The storage seam is no longer the obstacle — `DATABASE_URL` moves
+  state into Postgres — but nothing is scoped by owner yet.
+- **Git is the database, unless you set `DATABASE_URL`.** On the file backend the
+  workflow commits `data/` so state survives between runs, and a concurrency
+  group serialises writes; that's a guard, not a fix. See *Where your data
+  lives*.
 - **Engagement depends on Late.** Metric availability varies by plan and platform.

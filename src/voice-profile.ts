@@ -1,10 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { LearnedRule, PostRecord, VoiceProfile } from './types.js';
-import { JsonDocument } from './store.js';
+import { document } from './store.js';
 import { fingerprint, selectExemplars } from './corpus.js';
 import { DISTILL_EFFORT, MAX_LEARNED_RULES, MODEL } from './config.js';
 
-export const profileStore = new JsonDocument<VoiceProfile>('voice-profile');
+export const profileStore = document<VoiceProfile>('voice-profile');
 
 const PROFILE_SCHEMA = {
   type: 'object',

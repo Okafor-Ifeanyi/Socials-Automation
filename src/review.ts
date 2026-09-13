@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import 'dotenv/config';
+import { runCli } from './cli.js';
 import * as readline from 'readline/promises';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -176,7 +177,4 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: Error) => {
-  console.error(`❌ ${error.message}`);
-  process.exit(1);
-});
+runCli(main);

@@ -1,4 +1,4 @@
-import { JsonCollection } from './store.js';
+import { collection } from './store.js';
 import { OUTCOME_DELAY_HOURS } from './config.js';
 import type { Outcome, Platform, PlatformText, PostRecord, Publication, Review } from './types.js';
 
@@ -9,7 +9,7 @@ import type { Outcome, Platform, PlatformText, PostRecord, Publication, Review }
  * (src/generated/*.json, automation-logs.jsonl, topics.json), which is why
  * nothing could answer "did the posts we wrote actually do anything".
  */
-export const posts = new JsonCollection<PostRecord>('posts');
+export const posts = collection<PostRecord>('posts');
 
 function slug(topic: string): string {
   return topic
@@ -28,16 +28,26 @@ export async function record(post: PostRecord): Promise<PostRecord> {
   return post;
 }
 
+/**
+ * Apply a change to one ledger entry.
+ *
+ * Delegates to the store's atomic update rather than reading and writing as
+ * two steps: every mutation here appends to an array (`publications`,
+ * `outcomes`), and two callers appending at once — a review in the UI while
+ * the cron records a publication — would otherwise drop one of the appends.
+ */
 async function mutate(
   id: string,
   change: (post: PostRecord) => PostRecord,
 ): Promise<PostRecord> {
-  const existing = await posts.get(id);
-  if (!existing) throw new Error(`No post in ledger with id ${id}`);
-
-  const updated = change(existing);
-  await posts.put(id, updated);
-  return updated;
+  try {
+    return await posts.update(id, change);
+  } catch (error) {
+    if ((error as Error).message === `No record with id ${id}`) {
+      throw new Error(`No post in ledger with id ${id}`);
+    }
+    throw error;
+  }
 }
 
 /** Record the author's verdict. `approved` carries any edits they made. */

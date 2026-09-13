@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import 'dotenv/config';
+import { runCli } from './cli.js';
 import { LatePublisher } from './late-publisher.js';
 import * as ledger from './ledger.js';
 import { OUTCOME_DELAY_HOURS, PLATFORM_LABELS } from './config.js';
@@ -62,7 +63,4 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: Error) => {
-  console.error(`❌ ${error.message}`);
-  process.exit(1);
-});
+runCli(main);

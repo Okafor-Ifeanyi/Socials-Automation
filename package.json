@@ -8,6 +8,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "tsx src/selftest.ts",
+    "test:store": "tsx src/store-check.ts",
     "start": "node dist/index.js",
     "generate": "tsx src/index.ts",
     "review": "tsx src/review.ts",
@@ -16,6 +17,7 @@
     "distill-voice": "tsx src/distill-voice.ts",
     "sync-engagement": "tsx src/sync-engagement.ts",
     "migrate": "tsx src/migrate.ts",
+    "migrate-db": "tsx src/migrate-db.ts",
     "get-accounts": "tsx src/get-accounts.ts",
     "test-late": "tsx src/test-late-connection.ts"
   },
@@ -31,10 +33,12 @@
     "@anthropic-ai/sdk": "^0.124.0",
     "@getlatedev/node": "^0.1.37",
     "csv-parse": "^6.1.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "pg": "^8.23.0"
   },
   "devDependencies": {
     "@types/node": "^25.3.3",
+    "@types/pg": "^8.23.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import 'dotenv/config';
+import { runCli } from './cli.js';
 import * as ledger from './ledger.js';
 import { loadTopicPool, selectTopic, summarise } from './topics.js';
 import { generateForTopic, publishRecord, describePublications } from './pipeline.js';
@@ -93,7 +94,4 @@ async function main(): Promise<void> {
   console.log('\n🎉 Done.');
 }
 
-main().catch((error: Error) => {
-  console.error(`\n❌ Automation failed: ${error.message}`);
-  process.exit(1);
-});
+runCli(main, '\n❌ Automation failed: ');

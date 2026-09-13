@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import 'dotenv/config';
+import { runCli } from './cli.js';
 import * as ledger from './ledger.js';
 import { generateForTopic, publishRecord, describePublications } from './pipeline.js';
 import { nextSlot } from './schedule.js';
@@ -110,7 +111,4 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: Error) => {
-  console.error(`\n❌ ${error.message}`);
-  process.exit(1);
-});
+runCli(main, '\n❌ ');
